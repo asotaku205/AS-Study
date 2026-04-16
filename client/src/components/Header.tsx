@@ -7,6 +7,7 @@ const Header = () => {
   const isAuthPage = pathname === "/login" || pathname === "/register";
 
   return (
+    <header className="fixed top-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md z-50 border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-300">
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <Link
         className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
@@ -37,7 +38,7 @@ const Header = () => {
             className="font-semibold flex items-center gap-2 transition-colors text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             to="/create-quiz"
           >
-            Tạo Quiz
+            Trắc nghiệm
           </Link>
           <Link
             className="font-semibold flex items-center gap-2 transition-colors text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
@@ -77,11 +78,15 @@ const Header = () => {
           )}
         </div>
       ) : (
-         <Link to="/" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-              Về trang chủ
+        <Link
+          to="/"
+          className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+        >
+          Về trang chủ
         </Link>
       )}
     </div>
+  </header>
   );
 };
 export default Header;

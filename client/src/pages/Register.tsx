@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Brain, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import AuthBanner from "../components/users/AuthBanner";
 
 const Register = () => {

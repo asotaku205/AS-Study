@@ -1,4 +1,4 @@
-import { Brain, ArrowRight } from "lucide-react";
+import {ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import AuthBanner from "../components/users/AuthBanner";
 
