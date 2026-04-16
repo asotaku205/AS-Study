@@ -42,7 +42,7 @@ const Header = () => {
           </Link>
           <Link
             className="font-semibold flex items-center gap-2 transition-colors text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-            to="/study"
+            to="/create-lecture"
           >
             Học tập
           </Link>

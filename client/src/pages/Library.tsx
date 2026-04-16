@@ -159,14 +159,14 @@ const Library = () => {
             )}
           </div>
         </div>
-        {/* ── Category Tabs ── */}
+        {/*  Category Tabs*/}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
           <CategoryCard
             icon={<BookOpen className="w-4 h-4" />}
             category="Tất cả"
           />
         </div>
-        {/* ── Results Count ── */}
+        {/* Results Count */}
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
             {filteredDocs.length === 0
@@ -193,7 +193,7 @@ const Library = () => {
             </button>
           )}
         </div>
-        {/* ── Featured Section ── */}
+        {/* Featured Section */}
 
         <section className="space-y-4">
           <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -216,7 +216,7 @@ const Library = () => {
           </div>
         </section>
 
-        {/* ── All Documents ── */}
+        {/* All Documents  */}
         {filteredDocs.length < 0 ? (
           <section className="space-y-4">
             <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">

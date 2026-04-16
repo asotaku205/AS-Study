@@ -9,6 +9,7 @@ import DocsDetail from "./pages/DocsDetail";
 import PersonalLibrary from "./pages/PersonalLibrary";
 import UploadDoc from "./pages/UploadDoc";
 import CreateQuiz from "./pages/CreateQuiz";
+import CreateLecture from "./pages/CreateLecture";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/personal-library" element={<PersonalLibrary />} />
           <Route path="/upload" element={<UploadDoc />} />
           <Route path="/create-quiz" element={<CreateQuiz />} />
+          <Route path="/create-lecture" element={<CreateLecture />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

@@ -12,7 +12,7 @@ const PersonalLibrary = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
-      {/* ── Header ── */}
+      {/*Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-2">
@@ -39,7 +39,7 @@ const PersonalLibrary = () => {
         </div>
       </div>
 
-      {/* ── Filters ── */}
+      {/*Filters  */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
@@ -73,10 +73,10 @@ const PersonalLibrary = () => {
         </div>
       </div>
 
-      {/* ── Document List ── */}
+      {/* Document List  */}
         <SavedDoc />
 
-      {/* ── Pagination ── */}
+      {/*Pagination  */}
       
     </div>
   )

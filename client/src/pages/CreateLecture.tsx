@@ -1,27 +1,27 @@
-import HistoryQuiz from "../components/users/quiz/HistoryQuiz";
+import HistoryLecture from "../components/users/lecture/HistoryLecture";
 import FormCreate from "../components/users/FormCreate";
-const CreateQuiz = () => {
+
+const CreateLecture = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-12 pb-12">
       <header>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Tạo Trắc Nghiệm Mới
+          Trung tâm Học tập
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-2">
-          Tạo trắc nghiệm mới từ tài liệu của bạn hoặc ôn tập lại các bài đã
-          làm.
+          Bắt đầu bài giảng AI mới hoặc tiếp tục tiến độ học tập của bạn.
         </p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Form Creation */}
-        <FormCreate typeMode="quiz" />
+        <FormCreate typeMode="lecture" />
 
-        {/* History  */}
-        <HistoryQuiz />
+        {/* History */}
+        <HistoryLecture />
       </div>
     </div>
   );
 };
 
-export default CreateQuiz;
+export default CreateLecture;
