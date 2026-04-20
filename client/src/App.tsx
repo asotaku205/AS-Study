@@ -12,6 +12,8 @@ import CreateQuiz from "./pages/CreateQuiz";
 import CreateLecture from "./pages/CreateLecture";
 import ChatAI from "./pages/ChatAI";
 import QuizMode from "./pages/QuizMode";
+import QuizResult from "./pages/QuizResult";
+import StudyMode from "./pages/StudyMode";
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
           <Route path="/chat" element={<ChatAI />} />
           <Route path="/quiz" element={<QuizMode />} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/quiz-result" element={<QuizResult />} /> 
+          <Route path="/study" element={<StudyMode />} />
         </Route>
       </Routes>
   );

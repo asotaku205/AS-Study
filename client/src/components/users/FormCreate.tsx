@@ -74,7 +74,7 @@ const FormCreate = ({ typeMode }: { typeMode: string }) => {
             type="submit"
             onClick={() => {
               typeMode === "lecture"
-                ? navigate("/create-lecture")
+                ? navigate("/study")
                 : navigate("/quiz");
             }}
             className="flex items-center gap-2 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-lg w-full md:w-auto justify-center"

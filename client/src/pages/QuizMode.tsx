@@ -1,7 +1,7 @@
 import { CheckCircle} from "lucide-react";
 import Question from "../components/users/quiz/Question";
-import ChatQuiz from "../components/users/quiz/ChatQuiz";
 import { useState } from "react";
+import ChatBox from "../components/users/ChatBox";
 
 type QuizQuestion = {
   id: number;
@@ -12,6 +12,7 @@ type QuizQuestion = {
 };
 
 const QuizMode = () => {
+  const [isChatOpen, setIsChatOpen] = useState(false);
     const [currentQuestionIdx, setCurrrentQuestionIdx] = useState(0);
     const mockQuiz: QuizQuestion[] = [
         {
@@ -47,16 +48,16 @@ const QuizMode = () => {
   };
 
   const handleSubmitQuiz = () => {
-    console.log("Submit quiz");
+    window.location.href = "/quiz-result";
   };
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)]">
       {/* Quiz Area  */}
-      <div className="flex-1 lg:flex-[2] flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden relative">
+      <div className="flex-1 lg:flex-2 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden relative">
         
-        <Question currentQuestionIdx={currentQuestionIdx}  mockQuiz={mockQuiz}/>     
-
+        <Question currentQuestionIdx={currentQuestionIdx}  mockQuiz={mockQuiz} isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen}/>     
+        
    
 
         {/* Footer Actions */}
@@ -89,7 +90,9 @@ const QuizMode = () => {
       </div>
 
       {/* Chatbot Area */}
-      <ChatQuiz/>
+     {isChatOpen && (
+        <ChatBox setIsChatOpen={setIsChatOpen} />
+      )}
     </div>
   )
 }

@@ -53,7 +53,7 @@ const HistoryQuiz = () => {
                 </span>
               </div>
               <Link
-                to={`/quiz-results/${quiz.id}`}
+                to={`/quiz-result`}
                 className="mt-4 block w-full text-center py-2.5 bg-white dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
               >
                 Xem kết quả

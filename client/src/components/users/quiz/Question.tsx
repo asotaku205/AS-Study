@@ -1,4 +1,4 @@
-import { Sparkles, Clock } from "lucide-react";
+import { Sparkles, Clock, MessageSquare } from "lucide-react";
 import { useState } from "react";
 
 type QuizQuestion = {
@@ -14,7 +14,15 @@ type QuestionProps = {
   mockQuiz: QuizQuestion[];
 };
 
-const Question = ({ currentQuestionIdx, mockQuiz }: QuestionProps) => {
+const Question = ({
+  currentQuestionIdx,
+  mockQuiz,
+  isChatOpen,
+  setIsChatOpen,
+}: QuestionProps & {
+  isChatOpen: boolean;
+  setIsChatOpen: (isOpen: boolean) => void;
+}) => {
   const [showHint, setShowHint] = useState<Record<number, boolean>>({});
   const [answers, setAnswers] = useState<Record<number, number>>({});
 
@@ -38,9 +46,20 @@ const Question = ({ currentQuestionIdx, mockQuiz }: QuestionProps) => {
             Câu {currentQuestionIdx + 1} / {mockQuiz.length}
           </div>
         </div>
-        <div className="flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-lg font-mono font-bold shadow-sm">
-          <Clock className="w-4 h-4" />
-          <span>00:00</span>
+        <div className="flex gap-3">
+          <div className="flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-lg font-mono font-bold shadow-sm">
+            <Clock className="w-4 h-4" />
+            <span>00:00</span>
+          </div>
+          {!isChatOpen && (
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg text-sm font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span className="hidden sm:inline">Mở Trợ lý AI</span>
+            </button>
+          )}
         </div>
       </div>
       <div className="p-8 flex-1 overflow-y-auto">

@@ -31,7 +31,7 @@ const HistoryLecture = () => {
               {recentStudies.map((study) => (
                 <Link 
                   key={study.id} 
-                  to={`/study/${study.id}`}
+                  to={`/study`}
                   className="bg-slate-50 dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all flex flex-col justify-between group block"
                 >
                   <div>
