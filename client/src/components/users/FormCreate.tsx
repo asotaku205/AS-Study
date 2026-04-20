@@ -1,12 +1,14 @@
 import { FileText, Sparkles, BookOpen } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import UploadZone from "./UploadZone";
 import SettingLecture from "./lecture/SettingLecture";
 import SettingQuiz from "./quiz/SettingQuiz";
+
 const FormCreate = ({ typeMode }: { typeMode: string }) => {
   const [inputType, setInputType] = useState<"text" | "file">("text");
   const [topic, setTopic] = useState("");
+  const navigate = useNavigate();
 
   return (
     <div className="lg:col-span-2 space-y-6">
@@ -70,6 +72,11 @@ const FormCreate = ({ typeMode }: { typeMode: string }) => {
         <div className="pt-4 flex justify-end relative z-10">
           <button
             type="submit"
+            onClick={() => {
+              typeMode === "lecture"
+                ? navigate("/create-lecture")
+                : navigate("/quiz");
+            }}
             className="flex items-center gap-2 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-lg w-full md:w-auto justify-center"
           >
             <Sparkles className="w-5 h-5" />

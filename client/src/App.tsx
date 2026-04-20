@@ -10,6 +10,8 @@ import PersonalLibrary from "./pages/PersonalLibrary";
 import UploadDoc from "./pages/UploadDoc";
 import CreateQuiz from "./pages/CreateQuiz";
 import CreateLecture from "./pages/CreateLecture";
+import ChatAI from "./pages/ChatAI";
+import QuizMode from "./pages/QuizMode";
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
           <Route path="/upload" element={<UploadDoc />} />
           <Route path="/create-quiz" element={<CreateQuiz />} />
           <Route path="/create-lecture" element={<CreateLecture />} />
+          <Route path="/chat" element={<ChatAI />} />
+          <Route path="/quiz" element={<QuizMode />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
