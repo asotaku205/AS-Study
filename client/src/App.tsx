@@ -14,6 +14,8 @@ import ChatAI from "./pages/ChatAI";
 import QuizMode from "./pages/QuizMode";
 import QuizResult from "./pages/QuizResult";
 import StudyMode from "./pages/StudyMode";
+import Profile from "./pages/Profile";
+import Setting from "./pages/Setting";
 
 function App() {
   return (
@@ -33,6 +35,8 @@ function App() {
           <Route path="*" element={<NotFound />} />
           <Route path="/quiz-result" element={<QuizResult />} /> 
           <Route path="/study" element={<StudyMode />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Setting />} />
         </Route>
       </Routes>
   );
