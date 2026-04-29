@@ -16,6 +16,7 @@ import QuizResult from "./pages/QuizResult";
 import StudyMode from "./pages/StudyMode";
 import Profile from "./pages/Profile";
 import Setting from "./pages/Setting";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -38,6 +39,8 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Setting />} />
         </Route>
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/*" element={<AdminDashboard/>}/>
       </Routes>
   );
 }
