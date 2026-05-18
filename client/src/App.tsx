@@ -17,9 +17,13 @@ import StudyMode from "./pages/StudyMode";
 import Profile from "./pages/Profile";
 import Setting from "./pages/Setting";
 import AdminDashboard from "./pages/AdminDashboard";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { AdminRoute, RequireRole } from "./components/admin/AdminRoute";
 
 function App() {
   return (
+    <>
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
@@ -34,14 +38,21 @@ function App() {
           <Route path="/chat" element={<ChatAI />} />
           <Route path="/quiz" element={<QuizMode />} />
           <Route path="*" element={<NotFound />} />
-          <Route path="/quiz-result" element={<QuizResult />} /> 
+          <Route path="/quiz-result" element={<QuizResult />} />
           <Route path="/study" element={<StudyMode />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Setting />} />
         </Route>
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/*" element={<AdminDashboard/>}/>
+
+        <Route element={<AdminRoute />}>
+          <Route element={<RequireRole allow={["admin"]} />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/*" element={<AdminDashboard />} />
+          </Route>
+        </Route>
       </Routes>
+      <ToastContainer position="top-right" autoClose={2500} />
+    </>
   );
 }
 

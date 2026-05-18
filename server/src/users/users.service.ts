@@ -8,10 +8,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from './entity/user.entity';
+import { User, UserRole } from './entity/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { createHmac } from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { UserResponseDto } from './dto/user-response.dto';
 @Injectable()
 export class UsersService {
   constructor(
@@ -20,19 +21,28 @@ export class UsersService {
     private configService: ConfigService,
   ) {}
   // Tạo người dùng mới
-  async createUser(createUserDto: CreateUserDto): Promise<User> {
-    const exitingUser = await this.usersRepository.findOne({
+  async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    const existingUser = await this.usersRepository.findOne({
       where: { email: createUserDto.email },
     });
-    if (exitingUser) {
+    if (existingUser) {
       throw new ConflictException('Email đã được sử dụng');
     }
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const user = this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
+      role: UserRole.User,
     });
-    return await this.usersRepository.save(user);
+    const savedUser = await this.usersRepository.save(user);
+    return {
+      id: savedUser.id,
+      name: savedUser.name,
+      email: savedUser.email,
+      role: savedUser.role,
+      createdAt: savedUser.createdAt,
+      updatedAt: savedUser.updatedAt,
+    };
   }
   // Tìm người dùng theo email
   async findOneByEmail(email: string): Promise<User> {
@@ -48,15 +58,29 @@ export class UsersService {
   async updateUser(
     id: number,
     updateUserDto: UpdateUserDto,
-  ): Promise<User | null> {
+  ): Promise<UserResponseDto> {
+    const existingUser = await this.usersRepository.findOne({
+      where: { id },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User không tồn tại');
+    }
     if (updateUserDto.password) {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
     }
-    await this.usersRepository.update(id, {
-      ...updateUserDto,
-    });
 
-    return await this.usersRepository.findOne({ where: { id } });
+    Object.assign(existingUser, updateUserDto);
+
+    const updatedUser = await this.usersRepository.save(existingUser);
+    return {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
+    };
   }
   // Cập nhật refresh token
   async updateRefreshToken(userId: number, refreshToken: string) {
@@ -65,7 +89,7 @@ export class UsersService {
       refreshTokenHashed: hashedRefreshToken,
     });
   }
-  // hash refresh token 
+  // hash refresh token
   async hashRefreshToken(refreshToken: string): Promise<string> {
     const pepper = this.configService.getOrThrow<string>(
       'REFRESH_TOKEN_PEPPER',

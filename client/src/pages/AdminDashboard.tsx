@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -32,7 +32,12 @@ import DocViewModal from "../components/admin/DocViewModal";
 import ConfirmDialog from "../components/admin/ConfirmDialog";
 import SearchPanel from "../components/admin/SearchPanel";
 import NotificationsPanel from "../components/admin/NotificationsPanel";
+import { toast } from "react-toastify";
+import { getAccessToken } from "../services/api";
+import { logout } from "../services/authService";
+
 const AdminDashboard = () => { 
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [docs, setDocs] = useState<Doc[]>(initialDocs);
@@ -55,7 +60,16 @@ const AdminDashboard = () => {
     type: string;
     payload: string;
   }>(null);
-
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Đăng xuất thành công");
+    } catch {
+      toast.error("Có lỗi khi đăng xuất");
+    } finally {
+      navigate("/login");
+    }
+  };
   const getConfirmConfig = () => {
     if (!confirmAction) return null;
     if (confirmAction.type === "ban") {
@@ -387,7 +401,7 @@ const AdminDashboard = () => {
 
                     <Link
                       to="/login"
-                      onClick={() => setShowProfileMenu(false)}
+                      onClick={handleLogout}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                       <LogOut className="w-4 h-4 shrink-0" />

@@ -7,6 +7,8 @@ import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config/dist/config.module';
 import { JwtAuthGuard } from './auth/passport/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core/constants';
+import { Roles } from './decorators/roles';
+import { RolesGuard } from './auth/passport/roles.guard';
 
 @Module({
   imports: [
@@ -23,6 +25,11 @@ import { APP_GUARD } from '@nestjs/core/constants';
   providers: [AppService,{
     provide: APP_GUARD,
     useClass: JwtAuthGuard,
-  },],
+  },
+   {
+    provide: APP_GUARD,
+    useClass: RolesGuard,
+  },
+],
 })
 export class AppModule {}

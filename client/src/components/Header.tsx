@@ -1,13 +1,29 @@
 import { BookOpen, Brain, LogOut, Settings, Shield, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import { getRole, logout } from "../services/authService";
+import { getAccessToken } from "../services/api";
 
 const Header = () => {
   const [settingOpen, setSettingOpen] = useState(false);
-  const isLoggedIn = true;
+  const isLoggedIn = Boolean(getAccessToken());
   const { pathname } = useLocation();
   const isAuthPage = pathname === "/login" || pathname === "/register";
-
+  const navigate = useNavigate();
+  const isAdmin = getRole() === "admin";
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Đăng xuất thành công");
+    } catch {
+      toast.error("Có lỗi khi đăng xuất");
+    } finally {
+      setSettingOpen(false);
+      navigate("/login");
+    }
+  };
   return (
     <header className="fixed top-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md z-50 border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-300">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -95,15 +111,18 @@ const Header = () => {
                       <Settings /> Cài đặt hệ thống
                     </Link>
                     <div className="h-px bg-slate-200 dark:bg-slate-800 my-2"></div>
+                    {isAdmin && (
                     <Link
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white cursor-pointer outline-none"
                       to="/admin"
                     >
                       <Shield /> Quản trị viên
                     </Link>
+                    )}
                     <Link
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer outline-none"
-                      to="/login"
+                      to ="/"
+                      onClick={handleLogout}
                     >
                       <LogOut /> Đăng xuất
                     </Link>

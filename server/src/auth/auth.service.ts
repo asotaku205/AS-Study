@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from '../users/entity/user.entity';
+import { User, UserRole } from '../users/entity/user.entity';
 import { UsersService } from '../users/users.service';
 import { SignInDto } from './dto/sign-in.dto';
 import * as bcrypt from 'bcrypt';
@@ -17,6 +17,9 @@ export class AuthService {
   // Xác thực người dùng
   async validateUser(signInDto: SignInDto): Promise<any> {
     const user = await this.usersService.findOneByEmail(signInDto.email);
+    if (!user) {
+      throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+    }
     const passwordMatch = await bcrypt.compare(
       signInDto.password,
       user.password,
@@ -31,8 +34,9 @@ export class AuthService {
   async getTokens(
     userId: number,
     email: string,
+    role: UserRole
   ): Promise<{ access_token: string; refresh_token: string }> {
-    const payload = { email: email, sub: userId };
+    const payload = { email: email, sub: userId, role: role };
     return {
       access_token: this.jwtService.sign(payload),
       refresh_token: this.jwtService.sign(payload, {
@@ -43,7 +47,7 @@ export class AuthService {
   }
   // Đăng nhập và trả về token
   async login(user: any) {
-    const tokens = await this.getTokens(user.id, user.email);
+    const tokens = await this.getTokens(user.id, user.email, user.role);
     await this.usersService.updateRefreshToken(user.id, tokens.refresh_token);
     return tokens;
   }
@@ -63,7 +67,7 @@ export class AuthService {
     if ( refreshTokenMatch !== user.refreshTokenHashed) {
       throw new UnauthorizedException('Refresh token không hợp lệ');
     }
-    const tokens = await this.getTokens(user.id, user.email);
+    const tokens = await this.getTokens(user.id, user.email, user.role);
     await this.usersService.updateRefreshToken(user.id, tokens.refresh_token);
     return tokens;
   }

@@ -12,7 +12,10 @@ import {
   Library as LibraryIcon,
   ArrowUpRight,
 } from "lucide-react";
+import { getAccessToken } from "../services/api";
 const HomePage = () => {
+    const isLoggedIn = Boolean(getAccessToken());
+
   return (
     <div className="space-y-32 pb-24 relative">
       {/* Background */}
@@ -43,10 +46,10 @@ const HomePage = () => {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
             <Link
-              to="/register"
+              to={isLoggedIn ? "/library" : "/register"}
               className="w-full sm:w-auto px-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-all shadow-xl shadow-slate-900/20 dark:shadow-white/10 hover:shadow-2xl hover:-translate-y-1 flex items-center justify-center gap-3 text-lg group"
             >
-              Bắt đầu miễn phí{" "}
+              {isLoggedIn ? "Khám phá thư viện" : "Bắt đầu miễn phí"}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
