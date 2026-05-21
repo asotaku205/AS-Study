@@ -1,7 +1,7 @@
 import { useRef, useMemo } from "react";
 import { Search, X, Users, FileText } from "lucide-react";
-import type { User } from "./mockData/Users";
-import type { Doc } from "./mockData/Docs";
+import type { Document } from "../../types/documentTypes";
+import type { User } from "../../types/userTypes";
 import DocStatusBadge from "./DocStatusBadge";
 
 interface SearchPanelProps {
@@ -10,9 +10,9 @@ interface SearchPanelProps {
   showSearchDrop: boolean;
   setShowSearchDrop: (value: boolean) => void;
   users: User[];
-  docs: Doc[];
+  docs: Document[];
   onUserSelect: (user: User) => void;
-  onDocSelect: (doc: Doc) => void;
+  onDocSelect: (doc: Document) => void;
 }
 
 const SearchPanel = ({
@@ -29,7 +29,7 @@ const SearchPanel = ({
 
   const searchResults = useMemo(() => {
     const q = globalSearch.trim().toLowerCase();
-    if (q.length < 2) return { users: [] as User[], docs: [] as Doc[] };
+    if (q.length < 2) return { users: [] as User[], docs: [] as Document[] };
     return {
       users: users
         .filter(
@@ -42,7 +42,7 @@ const SearchPanel = ({
         .filter(
           (d) =>
             d.title.toLowerCase().includes(q) ||
-            d.author.toLowerCase().includes(q),
+            String(d.ownerUserId) === globalSearch.trim(),
         )
         .slice(0, 4),
     };
@@ -95,7 +95,7 @@ const SearchPanel = ({
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/70 transition-colors text-left group"
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${u.status === "Banned" ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"}`}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${u.isBanned ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"}`}
                     >
                       {u.name.charAt(0)}
                     </div>
@@ -108,7 +108,7 @@ const SearchPanel = ({
                       </p>
                     </div>
                     <span
-                      className={`ml-auto shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full border ${u.role === "Admin" ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent" : u.role === "Premium" ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700" : "bg-transparent text-slate-400 border-slate-200 dark:border-slate-700"}`}
+                      className={`ml-auto shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full border ${u.role === "admin" ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent" : "bg-transparent text-slate-400 border-slate-200 dark:border-slate-700"}`}
                     >
                       {u.role}
                     </span>
@@ -145,7 +145,7 @@ const SearchPanel = ({
                         {d.title}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {d.author} · {d.category}
+                        {d.owner?.name} · {d.category?.name}
                       </p>
                     </div>
                     <DocStatusBadge status={d.status} />
@@ -155,8 +155,8 @@ const SearchPanel = ({
             )}
             <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60">
               <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                {searchResults.users.length + searchResults.docs.length}{" "}
-                kết quả cho "
+                {searchResults.users.length + searchResults.docs.length} kết quả
+                cho "
                 <span className="font-bold text-slate-600 dark:text-slate-300">
                   {globalSearch}
                 </span>

@@ -13,6 +13,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { createHmac } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { UserResponseDto } from './dto/user-response.dto';
+import { plainToInstance } from 'class-transformer';
 @Injectable()
 export class UsersService {
   constructor(
@@ -35,14 +36,7 @@ export class UsersService {
       role: UserRole.User,
     });
     const savedUser = await this.usersRepository.save(user);
-    return {
-      id: savedUser.id,
-      name: savedUser.name,
-      email: savedUser.email,
-      role: savedUser.role,
-      createdAt: savedUser.createdAt,
-      updatedAt: savedUser.updatedAt,
-    };
+    return this.toUserResponse(savedUser);
   }
   // Tìm người dùng theo email
   async findOneByEmail(email: string): Promise<User> {
@@ -73,14 +67,7 @@ export class UsersService {
     Object.assign(existingUser, updateUserDto);
 
     const updatedUser = await this.usersRepository.save(existingUser);
-    return {
-      id: updatedUser.id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      role: updatedUser.role,
-      createdAt: updatedUser.createdAt,
-      updatedAt: updatedUser.updatedAt,
-    };
+    return this.toUserResponse(updatedUser);
   }
   // Cập nhật refresh token
   async updateRefreshToken(userId: number, refreshToken: string) {
@@ -110,6 +97,11 @@ export class UsersService {
     }
     return user;
   }
+
+  async findOneByIdResponse(id: number): Promise<UserResponseDto> {
+    const user = await this.findOneById(id);
+    return this.toUserResponse(user);
+  }
   //  Xóa người dùng
   async deleteUser(id: number): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id } });
@@ -125,5 +117,38 @@ export class UsersService {
   // Lấy tất cả người dùng
   async findAllUsers(): Promise<User[]> {
     return await this.usersRepository.find();
+  }
+
+  async findAllUsersResponse(): Promise<UserResponseDto[]> {
+    const users = await this.findAllUsers();
+    return users.map((user) => this.toUserResponse(user));
+  }
+
+  private toUserResponse(user: User): UserResponseDto {
+    return plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
+  }
+  async banUser(currentUserId: number, targetUserId: number) {
+    if (currentUserId === targetUserId) {
+      throw new BadRequestException('không thể tự ban chính mình');
+    }
+
+    const user = await this.findOneById(targetUserId);
+
+    user.isBanned = true;
+    user.refreshTokenHashed = null;
+
+    return this.usersRepository.save(user);
+  }
+  async unbanUser(id: number): Promise<UserResponseDto> {
+    const user = await this.findOneById(id);
+    if (!user.isBanned) {
+      
+      return this.toUserResponse(user);
+    }
+    user.isBanned = false;
+    const updatedUser = await this.usersRepository.save(user);
+    return this.toUserResponse(updatedUser);
   }
 }

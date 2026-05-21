@@ -1,12 +1,10 @@
-import React from 'react'
 import { Database, Users, BookOpen, Activity, AlertTriangle, ArrowUpRight, UserCheck, FileText, CheckCircle2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, BarChart, Bar } from "recharts";
-import initialUsers from "./mockData/Users";
-import initialDocs from "./mockData/Docs";
+import type { User } from "../../types/userTypes";
+import type { Document } from "../../types/documentTypes";
 import mockLogs from "./mockData/Logs";
 
-const users = initialUsers;
-const docs = initialDocs;
+
 
 const userGrowthData = [
   { name: 'Mon', users: 120 },
@@ -35,7 +33,7 @@ const trafficSourceData = [
 ];
 
 const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-const Overview = () => {
+const Overview = ({user,docs}: { user: User[]; docs: Document[] }) => {
   return (
      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -54,8 +52,8 @@ const Overview = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: "Tổng người dùng", value: `${users.length + 12440}`, change: "+12%", icon: Users, isPositive: true },
-          { label: "Tài liệu hệ thống", value: `${docs.length + 45813}`, change: "+8.5%", icon: BookOpen, isPositive: true },
+          { label: "Tổng người dùng", value: `${user.length}`, change: "+12%", icon: Users, isPositive: true },
+          { label: "Tài liệu hệ thống", value: `${docs.length }`, change: "+8.5%", icon: BookOpen, isPositive: true },
           { label: "Lượt Quiz / Tuần", value: "142.5k", change: "+24%", icon: Activity, isPositive: true },
           { label: "Cảnh báo hệ thống", value: `${mockLogs.filter(l => l.level === "ERROR" || l.level === "WARN").length}`, change: "-2%", icon: AlertTriangle, isPositive: false },
         ].map((metric, idx) => (

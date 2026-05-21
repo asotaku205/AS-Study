@@ -8,6 +8,7 @@ import SearchBar from "../components/users/library/Search";
 const PersonalLibrary = () => {
     const [activeTab, setActiveTab] = useState<"all" | "published" | "private">("all");
     const [searchQuery, setSearchQuery] = useState("");
+    
 
 
   return (
@@ -74,7 +75,7 @@ const PersonalLibrary = () => {
       </div>
 
       {/* Document List  */}
-        <SavedDoc />
+    <SavedDoc activeTab={activeTab} searchQuery={searchQuery} />
 
       {/*Pagination  */}
       

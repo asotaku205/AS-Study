@@ -1,11 +1,11 @@
 import { useRef, useMemo } from "react";
 import { Bell, ExternalLink } from "lucide-react";
-import type { Doc } from "./mockData/Docs";
 import mockLogs from "./mockData/Logs";
+import type { Document } from "../../types/documentTypes";
 import { Clock, AlertTriangle, AlertCircle } from "lucide-react";
 
 interface NotificationsPanelProps {
-  docs: Doc[];
+  docs: Document[];
   showNotifPanel: boolean;
   setShowNotifPanel: (value: boolean) => void;
   readNotifIds: Set<string>;

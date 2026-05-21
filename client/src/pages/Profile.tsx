@@ -11,8 +11,41 @@ import {
 } from "lucide-react";
 import ProfileCard from "../components/users/profile/ProfileCard";
 import { Link } from "react-router-dom";
+import { getUserProfile } from "../services/userService";
+import { useEffect, useState } from "react";
+
+type UserProfile = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 const Profile = () => {
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async () => {
+      try {
+        const data = await getUserProfile();
+        if (isMounted) {
+          setUserProfile(data);
+        }
+      } catch (error) {
+        console.error("Failed to load user profile:", error);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12 relative">
       {/* Background  */}
@@ -43,11 +76,11 @@ const Profile = () => {
         <div className="lg:col-span-1 flex flex-col gap-6">
           {/* Profile Card */}
           <ProfileCard
-            avatar="AS"
-            name="Anh Son"
-            gmail="sonotaku555@gmail.com "
-            docs={24}
-            quizzes={45}
+            avatar={(userProfile?.name ?? "U").slice(0, 2).toUpperCase()}
+            name={userProfile?.name ?? "Người dùng"}
+            gmail={userProfile?.email ?? ""}
+            docs={0}
+            quizzes={0}
           />
 
           {/* Recent Activity Card */}

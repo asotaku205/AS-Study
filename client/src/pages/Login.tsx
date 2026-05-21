@@ -9,30 +9,34 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isShowPassword,setIsShowPassword] = useState(false);
+  const [isShowPassword, setIsShowPassword] = useState(false);
   const navigate = useNavigate();
 
-
   const schema = z.object({
-  email: z.email("Email không hợp lệ"),
-  password: z.string().min(6, "Tối thiểu 6 ký tự"),
-});
+    email: z.email("Email không hợp lệ"),
+    password: z.string().min(6, "Tối thiểu 6 ký tự"),
+  });
 
-const { register, handleSubmit, formState: { errors } } = useForm({
-  resolver: zodResolver(schema),
-});
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+  });
   const handleLogin = async (data: { email: string; password: string }) => {
     setIsLoading(true);
     try {
       await login(data.email, data.password);
       toast.success("Đăng nhập thành công!");
       navigate("/");
-    } catch (err) {
+    } catch (err:any) {
+      const message = err.response?.data?.message;
+
       toast.error(
-        "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.",
+        Array.isArray(message) ? message[0] : message || "Đăng nhập thất bại",
       );
     } finally {
       setIsLoading(false);
@@ -72,21 +76,23 @@ const { register, handleSubmit, formState: { errors } } = useForm({
                 Mật khẩu
               </label>
               <div className="mt-1 relative">
-                
                 <input
                   type={isShowPassword ? "text" : "password"}
-
                   {...register("password")}
                   className="appearance-none block w-full px-3 py-2.5 pr-10 border border-slate-300 dark:border-slate-700 rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 sm:text-sm transition-colors"
                   placeholder="••••••••"
                 />
-                  <button
-                    type="button"
-                    className="absolute right-3 inset-y-0 flex items-center text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-                    onClick={() => setIsShowPassword(!isShowPassword)}
-                  >
-                    {isShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+                <button
+                  type="button"
+                  className="absolute right-3 inset-y-0 flex items-center text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                  onClick={() => setIsShowPassword(!isShowPassword)}
+                >
+                  {isShowPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
                 {errors.password && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                     {errors.password.message}
@@ -128,7 +134,7 @@ const { register, handleSubmit, formState: { errors } } = useForm({
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <CircularProgress aria-label="Loading…" size={20}  />
+                  <CircularProgress aria-label="Loading…" size={20} />
                 ) : (
                   "Đăng nhập"
                 )}

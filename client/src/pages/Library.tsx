@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -19,44 +19,59 @@ import DocsCard from "../components/users/library/DocsCard";
 import StatsCard from "../components/users/library/StatsCard";
 import CategoryCard from "../components/users/library/CategoryCard";
 import SearchBar from "../components/users/library/Search";
-
+import useGetUser from "../hooks/useGetUser";
+import { getFeaturedDocuments, getPublicDocuments } from "../services/documentService";
+import type { Document } from "../types/documentTypes";
+import AppPagination from "../components/Pagination";
 
 const Library = () => {
   const [activeSort, setActiveSort] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { users } = useGetUser();
+  const [docs, setDocs] = useState<Document[]>([]);
+  const [feaDocs, setFeaDocs] = useState<Document[]>([]);
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 6;
 
-  const filteredDocs: any[] = [
-    {
-      id: 1,
-      title: "Giới thiệu Machine Learning với Python",
-      desc: "Tự động phân tích tài liệu DOCX và sinh bài trắc nghiệm thông minh, giúp bạn ôn tập hiệu quả hơn.",
-      avatar: "AS",
-      author: "Anh Sơn",
-      views: 1234,
-      quizzes: 567,
-      pages: 10,
-    },
-    {
-      id: 2,
-      title: "Học sâu cơ bản với TensorFlow",
-      desc: "Tự động phân tích tài liệu DOCX và sinh bài trắc nghiệm thông minh, giúp bạn ôn tập hiệu quả hơn.",
-      avatar: "AS",
-      author: "Anh Sơn",
-      views: 1234,
-      quizzes: 567,
-      pages: 10,
-    },
-    {
-      id: 3,
-      title: "Xử lý ngôn ngữ tự nhiên với spaCy",
-      desc: "Tự động phân tích tài liệu DOCX và sinh bài trắc nghiệm thông minh, giúp bạn ôn tập hiệu quả hơn.",
-      avatar: "AS",
-      author: "Anh Sơn",
-      views: 1234,
-      quizzes: 567,
-      pages: 10,
-    },
-  ];
+  useEffect(() => {
+    const loadDocs = async () => {
+      try {
+        const data = await getPublicDocuments();
+        setDocs(data);
+      } catch (error) {
+        console.error("Error fetching documents:", error);
+      }
+    };
+
+    const loadFeaturedDocs = async () => {
+      try {
+        const data = await getFeaturedDocuments();
+        setFeaDocs(data);
+      } catch (error) {
+        console.error("Error fetching featured documents:", error);
+      }
+    };
+
+    loadDocs();
+    loadFeaturedDocs();
+  }, []);
+ 
+
+  const filteredDocs = useMemo(() => {
+    return docs.filter((doc) => {
+      if (searchQuery.trim() === "") return true;
+
+      return doc.title.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [docs, searchQuery]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredDocs.length / ITEMS_PER_PAGE),
+  );
+  const pagedDocs = filteredDocs.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE,
+  );
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full relative z-10">
       <div className="max-w-7xl mx-auto space-y-10 pb-16">
@@ -76,7 +91,7 @@ const Library = () => {
           <StatsCard
             icon={<FileText className="w-5 h-5" />}
             title="Tài liệu"
-            value="1,234"
+            value={String(docs?.length || 0)}
           />
           <StatsCard
             icon={<Sparkles className="w-5 h-5" />}
@@ -86,12 +101,11 @@ const Library = () => {
           <StatsCard
             icon={<User className="w-5 h-5" />}
             title="Người dùng"
-            value="5,678"
+            value={String(users?.length || 0)}
           />
         </div>
         {/* Publish Banner */}
         <div className="relative bg-slate-900/90 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 overflow-hidden border border-slate-700 shadow-lg">
-         
           <div className="absolute right-0 top-0 bottom-0 w-48 opacity-5 flex items-center justify-center pointer-events-none">
             <Upload className="w-40 h-40 text-white" />
           </div>
@@ -127,7 +141,10 @@ const Library = () => {
         {/* Search + Sort */}
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Search */}
-          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
           {/* Sort Dropdown */}
           <div className="relative">
             <button
@@ -169,9 +186,9 @@ const Library = () => {
         {/* Results Count */}
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-            {filteredDocs.length === 0
+            {docs.length === 0
               ? "Không tìm thấy tài liệu nào"
-              : `Hiển thị ${filteredDocs.length} tài liệu`}
+              : `Hiển thị ${docs.length} tài liệu`}
             {searchQuery && (
               <span className="ml-1">
                 cho "
@@ -201,23 +218,14 @@ const Library = () => {
             Tài liệu nổi bật
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredDocs.map((doc) => (
-                <DocsCard
-                  key={doc.id}
-                  title={doc.title}
-                  desc={doc.desc}
-                  avatar={doc.avatar}
-                  author={doc.author}
-                  views={doc.views}
-                  quizzes={doc.quizzes}
-                  pages={doc.pages}
-                />
-              ))}
+            {feaDocs.map((doc) => (
+              <DocsCard docs={doc} />
+            ))}
           </div>
         </section>
 
         {/* All Documents  */}
-        {filteredDocs.length < 0 ? (
+        {docs.length > 0 ? (
           <section className="space-y-4">
             <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -225,17 +233,8 @@ const Library = () => {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredDocs.map((doc) => (
-                <DocsCard
-                  key={doc.id}
-                  title={doc.title}
-                  desc={doc.desc}
-                  avatar={doc.avatar}
-                  author={doc.author}
-                  views={doc.views}
-                  quizzes={doc.quizzes}
-                  pages={doc.pages}
-                />
+              {pagedDocs.map((doc) => (
+                <DocsCard docs={doc} />
               ))}
             </div>
           </section>
@@ -260,6 +259,7 @@ const Library = () => {
             </button>
           </div>
         )}
+        <AppPagination page={page} totalPages={totalPages} onChange={setPage} />
       </div>
     </div>
   );

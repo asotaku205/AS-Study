@@ -230,6 +230,7 @@ const HomePage = () => {
       </section>
 
       {/* Start Section */}
+      {!isLoggedIn ? (
       <section className="max-w-4xl mx-auto px-4 relative z-10">
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/50 dark:border-slate-800 rounded-[2.5rem] p-12 md:p-20 text-center space-y-10 shadow-2xl">
           <Zap className="w-16 h-16 text-slate-900 dark:text-white mx-auto" />
@@ -250,6 +251,24 @@ const HomePage = () => {
           </Link>
         </div>
       </section>
+      ) : (
+        <section className="max-w-4xl mx-auto px-4 relative z-10">
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/50 dark:border-slate-800 rounded-[2.5rem] p-12 md:p-20 text-center space-y-10 shadow-2xl">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+              Chào mừng bạn đến với AI Scholarly!
+            </h2>
+            <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-medium">
+              Hãy bắt đầu hành trình học tập của bạn ngay hôm nay.
+            </p>
+            <Link
+              to="/create-lecture"
+              className="inline-flex px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-xl text-lg"
+            >
+              Tạo bài giảng mới
+            </Link>
+          </div>
+        </section>
+      )}
     </div>
   );
 };

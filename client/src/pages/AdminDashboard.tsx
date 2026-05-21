@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -16,6 +16,7 @@ import {
   Moon,
   Sun,
   ExternalLink,
+  LayoutList,
 } from "lucide-react";
 import NavItem from "../components/admin/NavItem";
 import Overview from "../components/admin/Overview";
@@ -23,30 +24,31 @@ import UserTab from "../components/admin/UserTab";
 import DocumentsTab from "../components/admin/DocumentsTab";
 import ReportTab from "../components/admin/ReportTab";
 import SettingTab from "../components/admin/SettingTab";
-import initialDocs from "../components/admin/mockData/Docs";
-import type { Doc } from "../components/admin/mockData/Docs";
-import initialUsers from "../components/admin/mockData/Users";
-import type { User } from "../components/admin/mockData/Users";
-import UserModal from "../components/admin/UserModal";
 import DocViewModal from "../components/admin/DocViewModal";
 import ConfirmDialog from "../components/admin/ConfirmDialog";
 import SearchPanel from "../components/admin/SearchPanel";
 import NotificationsPanel from "../components/admin/NotificationsPanel";
 import { toast } from "react-toastify";
-import { getAccessToken } from "../services/api";
 import { logout } from "../services/authService";
+import useGetUser from "../hooks/useGetUser";
+import type { Document, DocumentStatus } from "../types/documentTypes";
+import type { User } from "../types/userTypes";
+import useGetDocument from "../hooks/useGetDocument";
+import CategoriesTab from "../components/admin/CategoriesTab";
+import CategoryModal from "../components/admin/CategoryModal";
+import useGetCategories from "../hooks/useGetCategories";
+import type { Category } from "../types/categoryTypes";
+import { banUser, unbanUser } from "../services/userService";
 
-const AdminDashboard = () => { 
+const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [docs, setDocs] = useState<Doc[]>(initialDocs);
   const [docStatusFilter, setDocStatusFilter] = useState<
     "all" | "Published" | "Pending" | "Reported" | "Rejected"
   >("all");
   const [globalSearch, setGlobalSearch] = useState("");
   const [showSearchDrop, setShowSearchDrop] = useState(false);
-  const [users, setUsers] = useState<User[]>(initialUsers);
   const [userSearch, setUserSearch] = useState("");
   const [docSearch, setDocSearch] = useState("");
   const [readNotifIds, setReadNotifIds] = useState<Set<string>>(new Set());
@@ -54,8 +56,11 @@ const AdminDashboard = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const [isDark, setTheme] = useState<"light" | "dark">("light");
-  const [editingUser, setEditingUser] = useState<User | null | "new">(null);
-  const [viewingDoc, setViewingDoc] = useState<Doc | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<Document | null>(null);
+  const [editingCategory, setEditingCategory] = useState<
+    Category | null | "new"
+  >(null);
+
   const [confirmAction, setConfirmAction] = useState<null | {
     type: string;
     payload: string;
@@ -70,10 +75,41 @@ const AdminDashboard = () => {
       navigate("/login");
     }
   };
+  const { user, users, setUsers } = useGetUser();
+  const { docs, setDocs } = useGetDocument();
+  const { categories, setCategories } = useGetCategories();
+  const handleDocStatusUpdated = (id: number, status: DocumentStatus) => {
+    setDocs((prev) =>
+      prev.map((doc) => (doc.id === id ? { ...doc, status } : doc)),
+    );
+  };
+  const handleToggleBan = async (id: number, isBanned: boolean) => {
+    try {
+      if (isBanned) {
+        await unbanUser(id);
+
+        setUsers((prev) =>
+          prev.map((u) => (u.id === id ? { ...u, isBanned: false } : u)),
+        );
+
+        toast.success("Đã mở khóa tài khoản");
+      } else {
+        await banUser(id);
+
+        setUsers((prev) =>
+          prev.map((u) => (u.id === id ? { ...u, isBanned: true } : u)),
+        );
+
+        toast.success("Đã khóa tài khoản");
+      }
+    } catch {
+      toast.error("Có lỗi xảy ra");
+    }
+  };
   const getConfirmConfig = () => {
     if (!confirmAction) return null;
     if (confirmAction.type === "ban") {
-      const user = users.find((u) => u.id === confirmAction.payload);
+      const user = users.find((u) => String(u.id) === confirmAction.payload);
       return {
         title: "Khoá tài khoản?",
         description: `Bạn có chắc muốn khoá tài khoản "${user?.name}"? Người dùng sẽ không thể đăng nhập.`,
@@ -82,7 +118,7 @@ const AdminDashboard = () => {
       };
     }
     if (confirmAction.type === "deleteUser") {
-      const user = users.find((u) => u.id === confirmAction.payload);
+      const user = users.find((u) => String(u.id) === confirmAction.payload);
       return {
         title: "Xoá tài khoản?",
         description: `Hành động này sẽ xoá vĩnh viễn tài khoản "${user?.name}". Không thể hoàn tác.`,
@@ -91,7 +127,7 @@ const AdminDashboard = () => {
       };
     }
     if (confirmAction.type === "deleteDoc") {
-      const doc = docs.find((d) => d.id === confirmAction.payload);
+      const doc = docs.find((d) => String(d.id) === confirmAction.payload);
       return {
         title: "Xoá tài liệu?",
         description: `Hành động này sẽ xoá vĩnh viễn tài liệu "${doc?.title}". Không thể hoàn tác.`,
@@ -152,6 +188,12 @@ const AdminDashboard = () => {
             label="Tài liệu & Học liệu"
             active={activeTab === "documents"}
             onClick={() => setActiveTab("documents")}
+          />
+          <NavItem
+            icon={LayoutList}
+            label="Danh mục"
+            active={activeTab === "categories"}
+            onClick={() => setActiveTab("categories")}
           />
           <NavItem
             icon={Activity}
@@ -242,7 +284,9 @@ const AdminDashboard = () => {
                       ? "Tài liệu & Học liệu"
                       : activeTab === "reports"
                         ? "Báo cáo hệ thống"
-                        : "Cài đặt chung"}
+                        : activeTab === "categories"
+                          ? "Danh mục"
+                          : "Cài đặt chung"}
               </span>
             </div>
           </div>
@@ -300,7 +344,7 @@ const AdminDashboard = () => {
                 </div>
                 <div className="hidden sm:block text-left">
                   <p className="text-xs font-black text-slate-900 dark:text-white leading-none">
-                    Hoàng Văn E
+                    {user?.name}
                   </p>
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                     Quản trị viên
@@ -321,10 +365,10 @@ const AdminDashboard = () => {
                       </div>
                       <div className="min-w-0">
                         <p className="font-black text-slate-900 dark:text-white text-sm truncate">
-                          Hoàng Văn E
+                          {user?.name}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
-                          hoange@example.com
+                          {user?.email}
                         </p>
                       </div>
                     </div>
@@ -420,9 +464,26 @@ const AdminDashboard = () => {
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-slate-200/20 dark:bg-slate-800/10 rounded-full blur-[120px] opacity-60 pointer-events-none -z-10" />
 
           <div className="p-6 md:p-8 max-w-7xl mx-auto">
-            {activeTab === "overview" && <Overview />}
-            {activeTab === "users" && <UserTab onEditUser={setEditingUser} />}
-            {activeTab === "documents" && <DocumentsTab onViewDoc={setViewingDoc} />}
+            {activeTab === "overview" && <Overview user={users} docs={docs} />}
+            {activeTab === "users" && (
+              <UserTab user={users} onToggleBan={handleToggleBan} />
+            )}
+            {activeTab === "documents" && (
+              <DocumentsTab
+                docs={docs}
+                onViewDoc={setViewingDoc}
+                onStatusUpdated={handleDocStatusUpdated}
+                onDeleteDoc={(id) => {
+                  setDocs((prev) => prev.filter((doc) => doc.id !== id));
+                }}
+              />
+            )}
+            {activeTab === "categories" && (
+              <CategoriesTab
+                categories={categories}
+                onEditCategory={setEditingCategory}
+              />
+            )}
             {activeTab === "reports" && <ReportTab />}
             {activeTab === "settings" && <SettingTab />}
           </div>
@@ -430,14 +491,30 @@ const AdminDashboard = () => {
       </main>
 
       {/* Modals & Dialogs */}
-      {editingUser !== null && (
-        <UserModal
-          user={editingUser === "new" ? null : editingUser}
-          onClose={() => setEditingUser(null)}
+      {viewingDoc && (
+        <DocViewModal
+          doc={viewingDoc}
+          onStatusUpdated={handleDocStatusUpdated}
+          onClose={() => setViewingDoc(null)}
         />
       )}
-      {viewingDoc && (
-        <DocViewModal doc={viewingDoc} onClose={() => setViewingDoc(null)} />
+      {editingCategory && (
+        <CategoryModal
+          category={editingCategory === "new" ? null : editingCategory}
+          onClose={() => setEditingCategory(null)}
+          onCategorySaved={(savedCategory) => {
+            setCategories((prev) => {
+              const exists = prev.some((c) => c.id === savedCategory.id);
+
+              if (exists) {
+                return prev.map((c) =>
+                  c.id === savedCategory.id ? savedCategory : c,
+                );
+              }
+              return [savedCategory, ...prev];
+            });
+          }}
+        />
       )}
       {confirmConfig && (
         <ConfirmDialog

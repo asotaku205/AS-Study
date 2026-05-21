@@ -11,10 +11,15 @@ import {
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './passport/local-auth.guard';
 import { Public } from '../decorators/public';
+import { UsersService } from '../users/users.service';
+import { UserResponseDto } from '../users/dto/user-response.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
 
   @Post('login')
@@ -61,7 +66,7 @@ export class AuthController {
 
 
   @Get('profile')
-  getProfile(@Request() req) {
-    return req.user;
+  async getProfile(@Request() req): Promise<UserResponseDto> {
+    return this.usersService.findOneByIdResponse(req.user.userId);
   }
 }

@@ -1,10 +1,11 @@
 import { BookOpen, Brain, LogOut, Settings, Shield, User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { getRole, logout } from "../services/authService";
 import { getAccessToken } from "../services/api";
+import { getUserProfile } from "../services/userService";
 
 const Header = () => {
   const [settingOpen, setSettingOpen] = useState(false);
@@ -13,6 +14,35 @@ const Header = () => {
   const isAuthPage = pathname === "/login" || pathname === "/register";
   const navigate = useNavigate();
   const isAdmin = getRole() === "admin";
+  const navLinks = [
+    { name: "Trang chủ", path: "/" },
+    { name: "Thư viện", path: "/library" },
+    { name: "Tạo Quiz", path: "/create-quiz" },
+    { name: "Học tập", path: "/study" },
+    { name: "Chat AI", path: "/chat" },
+  ];
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUser(null);
+      return;
+    }
+    let isActive = true;
+    const loadUser = async () => {
+      try {
+        const data = await getUserProfile();
+        if (isActive) {
+          setUser(data);
+        }
+      } catch (error) {
+        console.error("Failed to load user profile:", error);
+      }
+    };
+    loadUser();
+    return () => {
+      isActive = false;
+    };
+  }, [isLoggedIn]);
   const handleLogout = async () => {
     try {
       await logout();
@@ -40,36 +70,25 @@ const Header = () => {
         </Link>
         {!isAuthPage && (
           <nav className="hidden md:flex items-center gap-8">
-            <Link
-              className="font-semibold flex items-center gap-2 transition-colors text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              to="/"
-            >
-              Trang chủ
-            </Link>
-            <Link
-              className="font-semibold flex items-center gap-2 transition-colors text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              to="/library"
-            >
-              Thư viện
-            </Link>
-            <Link
-              className="font-semibold flex items-center gap-2 transition-colors text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              to="/create-quiz"
-            >
-              Trắc nghiệm
-            </Link>
-            <Link
-              className="font-semibold flex items-center gap-2 transition-colors text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              to="/create-lecture"
-            >
-              Học tập
-            </Link>
-            <Link
-              className="font-semibold flex items-center gap-2 transition-colors text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              to="/chat"
-            >
-              Chat AI
-            </Link>
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.path || 
+                (link.path === '/study' && location.pathname.startsWith('/study')) || 
+                (link.path === '/chat' && location.pathname.startsWith('/chat')) ||
+                (link.path === '/library' && location.pathname.startsWith('/library'));
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`font-semibold flex items-center gap-2 transition-colors text-sm ${
+                    isActive
+                      ? "text-slate-900 dark:text-white"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
           </nav>
         )}
         {!isAuthPage ? (
@@ -86,10 +105,10 @@ const Header = () => {
                   <div className="absolute right-0 min-w-[220px] bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-2 z-[100] animate-in fade-in zoom-in-95 mt-2">
                     <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 mb-2">
                       <p className="text-sm font-bold text-slate-900 dark:text-white">
-                        Tài khoản của tôi
+                        {user?.name}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        user@example.com
+                        {user?.email}
                       </p>
                     </div>
                     <Link
@@ -112,16 +131,16 @@ const Header = () => {
                     </Link>
                     <div className="h-px bg-slate-200 dark:bg-slate-800 my-2"></div>
                     {isAdmin && (
-                    <Link
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white cursor-pointer outline-none"
-                      to="/admin"
-                    >
-                      <Shield /> Quản trị viên
-                    </Link>
+                      <Link
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white cursor-pointer outline-none"
+                        to="/admin"
+                      >
+                        <Shield /> Quản trị viên
+                      </Link>
                     )}
                     <Link
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer outline-none"
-                      to ="/"
+                      to="/"
                       onClick={handleLogout}
                     >
                       <LogOut /> Đăng xuất

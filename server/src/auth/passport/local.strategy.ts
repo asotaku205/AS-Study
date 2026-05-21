@@ -18,6 +18,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     signInDto.email = email;
     signInDto.password = password;
     const user = await this.authService.validateUser(signInDto);
+    
     if (!user) {
       throw new UnauthorizedException("Email hoặc mật khẩu không đúng");
     }

@@ -1,9 +1,68 @@
-import { Check, Globe, Shield, Upload, X } from "lucide-react";
-import { useState } from "react";
+import { Check, Globe, Shield, Upload } from "lucide-react";
+import { useEffect, useState } from "react";
 import UploadZone from "../components/users/UploadZone";
+import CircularProgress from "@mui/material/CircularProgress";
+import { toast } from "react-toastify";
+import { uploadDocument } from "../services/documentService";
+import { getUserProfile } from "../services/userService";
+import useGetCategories from "../hooks/useGetCategories";
 const UploadDoc = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [isPublic, setIsPublic] = useState(true);
+  const [isPublic, setIsPublic] = useState<'public' | 'private'>('private');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [categoryId, setCategoryId] = useState("1");
+  const [isLoading, setIsLoading] = useState(false);
+  const [ownerUserId, setOwnerUserId] = useState<number | null>(null);
+  const { categories, setCategories } = useGetCategories();
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await getUserProfile();
+        setOwnerUserId(data.id);
+      } catch (error) {
+        console.error("Failed to load user profile:", error);
+      }
+    };
+    loadProfile();
+  }, []);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file) {
+      toast.error("Vui lòng chọn file");
+      return;
+    }
+    if (!ownerUserId) {
+      toast.error("Không xác định được người dùng");
+      return;
+    }
+    try{
+      setIsLoading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("ownerUserId", String(ownerUserId));
+      formData.append("categoryId", categoryId);
+      formData.append("visibility", isPublic);
+      await uploadDocument(formData);
+      if (isPublic === 'public') {
+        toast.success("Tải lên thành công! tài liệu sẽ được duyệt trong thời gian sớm nhất.");
+      } else {
+        toast.success("Tải lên thành công!");
+      }
+      // reset form
+      setFile(null);
+      setTitle("");
+      setDescription("");
+      setCategoryId("1");
+      setIsPublic('private');
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi tải lên tài liệu");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-16">
@@ -17,7 +76,7 @@ const UploadDoc = () => {
         </p>
       </header>
 
-      <form onSubmit={() => {}} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8">
         {/* Upload Zone */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm">
           <UploadZone file={file} setFile={setFile} />
@@ -36,6 +95,8 @@ const UploadDoc = () => {
               </label>
               <input
                 type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="VD: Nhập môn Machine Learning cơ bản..."
                 className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white focus:border-transparent transition-shadow"
               />
@@ -48,6 +109,8 @@ const UploadDoc = () => {
               <textarea
                 placeholder="Tóm tắt nội dung chính của tài liệu..."
                 rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white focus:border-transparent transition-shadow resize-none"
               />
             </div>
@@ -56,15 +119,21 @@ const UploadDoc = () => {
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                 Danh mục
               </label>
-              <select className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white focus:border-transparent transition-shadow">
-                <option value="programming">Lập trình & CNTT</option>
-                <option value="math">Toán học</option>
-                <option value="science">Khoa học tự nhiên</option>
-                <option value="language">Ngoại ngữ</option>
-                <option value="history">Lịch sử & Xã hội</option>
-                <option value="design">Thiết kế & Nghệ thuật</option>
-                <option value="other">Khác</option>
+              {categories.length > 0 ? (
+              <select
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white focus:border-transparent transition-shadow"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+              >
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">Đang tải danh mục...</p>
+              )}
             </div>
           </div>
         </div>
@@ -77,15 +146,15 @@ const UploadDoc = () => {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div
-              className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${isPublic ? "border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800/50" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"}`}
-              onClick={() => setIsPublic(true)}
+              className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${isPublic === 'public' ? "border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800/50" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"}`}
+              onClick={() => setIsPublic('public')}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
                   <Globe className="w-5 h-5" />
                   Công khai
                 </div>
-                {isPublic && (
+                {isPublic === 'public' && (
                   <Check className="w-5 h-5 text-slate-900 dark:text-white" />
                 )}
               </div>
@@ -96,15 +165,15 @@ const UploadDoc = () => {
             </div>
 
             <div
-              className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${!isPublic ? "border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800/50" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"}`}
-              onClick={() => setIsPublic(false)}
+              className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${isPublic === 'private' ? "border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800/50" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"}`}
+              onClick={() => setIsPublic('private')}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
                   <Shield className="w-5 h-5" />
                   Chỉ mình tôi
                 </div>
-                {!isPublic && (
+                {isPublic === 'private' && (
                   <Check className="w-5 h-5 text-slate-900 dark:text-white" />
                 )}
               </div>
@@ -125,10 +194,15 @@ const UploadDoc = () => {
           </button>
           <button
             type="submit"
+            disabled={!file || !title || isLoading}
             className="px-8 py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors flex items-center gap-2 shadow-sm"
           >
             <Upload className="w-5 h-5" />
-            Tải lên tài liệu
+            {isLoading ? (
+              <CircularProgress aria-label="Loading…" size={20} />
+            ) : (
+              "Tải lên"
+            )}
           </button>
         </div>
       </form>

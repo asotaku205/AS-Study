@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRole } from '../users/entity/user.entity';
 import { UsersService } from '../users/users.service';
@@ -17,6 +17,9 @@ export class AuthService {
   // Xác thực người dùng
   async validateUser(signInDto: SignInDto): Promise<any> {
     const user = await this.usersService.findOneByEmail(signInDto.email);
+    if(user.isBanned) {
+      throw new ForbiddenException('Tài khoản đã bị khóa');
+    }
     if (!user) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
@@ -28,6 +31,7 @@ export class AuthService {
       const { password, ...result } = user;
       return result;
     }
+    
     return null;
   }
   // Tạo access token và refresh token
@@ -47,6 +51,10 @@ export class AuthService {
   }
   // Đăng nhập và trả về token
   async login(user: any) {
+     if (user.isBanned) {
+    throw new ForbiddenException(
+      'Tài khoản đã bị khóa',
+    ) };
     const tokens = await this.getTokens(user.id, user.email, user.role);
     await this.usersService.updateRefreshToken(user.id, tokens.refresh_token);
     return tokens;
@@ -62,6 +70,9 @@ export class AuthService {
       throw new UnauthorizedException(
         'Người dùng không tồn tại hoặc chưa đăng nhập',
       );
+    }
+    if(user.isBanned) {
+      throw new ForbiddenException('Tài khoản đã bị khóa');
     }
     const refreshTokenMatch = await this.usersService.hashRefreshToken(refreshToken);
     if ( refreshTokenMatch !== user.refreshTokenHashed) {

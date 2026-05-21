@@ -1,7 +1,28 @@
 import { ArrowLeft, BookOpen, Calendar, User, FileText, Eye, Sparkles, BookmarkPlus, Share2, Zap, Download } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-
+import { useEffect, useState } from "react";
+import type { Document } from "../types/documentTypes";
+import { getDocumentById } from "../services/documentService";
+import { useParams } from "react-router-dom";
+import { number } from "zod";
+import useGetFileBadge from "../hooks/useGetFileBadge";
 const DocsDetail = () => {
+  const [doc, setDoc] = useState<Document >();
+  const {id } = useParams<{ id: string }>();
+  const numericId = Number(id);
+  useEffect(() => {
+    const loadDoc = async () => {
+      try {
+        const data = await getDocumentById(numericId); 
+        setDoc(data);
+      } catch (error) {
+        console.error("Error fetching document:", error);
+      }
+    };
+    loadDoc();
+
+  }, [numericId]);
+    const getFileBadge = useGetFileBadge();
+    
   return (
    <div className="max-w-4xl mx-auto pb-16">
       {/* Back Button */}
@@ -25,10 +46,10 @@ const DocsDetail = () => {
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold border bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-800">
-                DOCX
+                {doc ? getFileBadge(doc.fileUrl) : "DOC"}
               </span>
               <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                <Calendar className="w-4 h-4" /> "1 ngày trước"
+                <Calendar className="w-4 h-4" /> {doc ? new Date(doc.createdAt).toLocaleDateString("vi-VN") : "1 ngày trước"}
               </span>
             </div>
             
@@ -53,10 +74,10 @@ const DocsDetail = () => {
           {/* Title and Description */}
           <div>
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-4 leading-tight">
-                Tài liệu mẫu: "Học tập hiệu quả với AI - Hướng dẫn chi tiết cho sinh viên"
+                {doc ? doc.title : "Tài liệu mẫu: 'Học tập hiệu quả với AI - Hướng dẫn chi tiết cho sinh viên'"}
             </h1>
             <p className="text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed max-w-3xl">
-                Đây là một tài liệu mẫu được tạo ra để minh họa cho giao diện chi tiết của một tài liệu trong thư viện. Tài liệu này cung cấp hướng dẫn chi tiết về cách sử dụng AI để hỗ trợ học tập hiệu quả, bao gồm các chiến lược học tập, công cụ AI hữu ích, và cách tích hợp AI vào quá trình học tập hàng ngày của sinh viên.
+                {doc ? doc.description : "Đây là một tài liệu mẫu được tạo ra để minh họa cho giao diện chi tiết của một tài liệu trong thư viện. Tài liệu này cung cấp hướng dẫn chi tiết về cách sử dụng AI để hỗ trợ học tập hiệu quả, bao gồm các chiến lược học tập, công cụ AI hữu ích, và cách tích hợp AI vào quá trình học tập hàng ngày của sinh viên."}
             </p>
           </div>
 
@@ -85,7 +106,7 @@ const DocsDetail = () => {
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Tác giả</p>
-                <p className="font-bold text-slate-900 dark:text-white">Nguyễn Văn A</p>
+                <p className="font-bold text-slate-900 dark:text-white">{doc?.owner?.name}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -94,7 +115,7 @@ const DocsDetail = () => {
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Độ dài</p>
-                <p className="font-bold text-slate-900 dark:text-white">1 trang</p>
+                <p className="font-bold text-slate-900 dark:text-white">{doc?.pageCount || "1 trang"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -103,7 +124,7 @@ const DocsDetail = () => {
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Lượt xem</p>
-                <p className="font-bold text-slate-900 dark:text-white">1,234</p>
+                <p className="font-bold text-slate-900 dark:text-white">{doc?.viewCount || "1,234"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
