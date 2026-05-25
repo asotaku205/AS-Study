@@ -2,6 +2,8 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  StreamableFile,
+  
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { UploadDocumentDto } from './dto/upload-document.dto';
@@ -15,6 +17,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Response } from 'express';
 
 @Injectable()
 export class DocumentsService {
@@ -153,5 +156,45 @@ export class DocumentsService {
       order: { viewCount: 'DESC' },
       take: 3,
     });
+  }
+  async incrementViewCount(id: number, visibility: DocumentVisibility): Promise<void> {
+    if (visibility === DocumentVisibility.Public) {
+      await this.documentsRepository.increment({ id }, 'viewCount', 1);
+    }
+  }
+  async downloadDocument(id: number,res: Response) {
+    const document = await this.findOne(id);
+
+    if (!document) {
+      throw new NotFoundException('Tài liệu không tồn tại');
+    }
+    if (document.visibility === DocumentVisibility.Private) {
+      throw new BadRequestException('Tài liệu này là riêng tư và không thể tải xuống');
+    }
+    const filePath = path.join(process.cwd(), document.fileUrl);
+
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('File tài liệu không tồn tại trên server');
+    }
+    return res.download(filePath, document.originalName);
+  }
+  async previewDocument(id: number,res: Response): Promise<StreamableFile> {
+    const document = await this.findOne(id);
+
+    if (!document) {
+      throw new NotFoundException('Tài liệu không tồn tại');
+    }
+    const filePath = path.join(process.cwd(), document.fileUrl);
+
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('File tài liệu không tồn tại trên server');
+    }
+    const fileStream = fs.createReadStream(filePath);
+    res.set({
+      'Content-Type': document.mimeType,
+      'Content-Disposition': `inline; filename="${document.originalName}"`,
+    });
+    return new StreamableFile(fileStream);
+
   }
 }

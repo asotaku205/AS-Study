@@ -46,3 +46,22 @@ export const getFeaturedDocuments = async () => {
   const response = await api.get("/documents/featured");
   return response.data;
 }
+export const incrementDocumentViewCount = async (id: number) => {
+  await api.patch(`/documents/${id}`);
+};
+export const downloadDocument = async (id: number) => {
+  const response = await api.get(`/documents/${id}/download`, {
+    responseType: 'blob',
+  });
+  return response.data;
+}
+export const getPreviewUrl = (id: number) => {
+  return `${import.meta.env.VITE_API_URL}/documents/${id}/preview`;
+};
+export const getPreviewDocument = async (id: number) => {
+  const response = await api.get(`/documents/${id}/preview`, {
+    responseType: "blob",
+  });
+
+  return response.data;
+};

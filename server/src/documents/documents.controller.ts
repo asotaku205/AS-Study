@@ -12,22 +12,24 @@ import {
   ParseIntPipe,
   Request,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import 'multer';
-import { diskStorage } from 'multer';
+import { diskStorage } from 'multer';   
 import { extname } from 'path';
+import type { Response } from 'express';
 import * as crypto from 'crypto';
 import { DocumentStatus } from './entities/document.entity';
-import { DocumentResponseDto } from './dto/response-document.dto';
 import { ChangeVisibilityDto } from './dto/change-visibility.dto';
 import * as fs from 'fs';
 
 import { ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES } from './constants/file-types';
 import { LocalAuthGuard } from '../auth/passport/local-auth.guard';
 import { JwtAuthGuard } from '../auth/passport/jwt-auth.guard';
+import { Public } from '../decorators/public';
 const ensureDirExists = (dir: string) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -120,6 +122,26 @@ export class DocumentsController {
   ) {
     return this.documentsService.changeVisibility(id, dto.visibility);
   }
+  @Get(':id/download')
+  async downloadDocument(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    return await this.documentsService.downloadDocument(id, res);
+  }
+  @Public()
+  @Get(':id/preview')
+  async previewDocument(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    return await this.documentsService.previewDocument(id, res);
+  }
+  @Patch(':id')
+  async incrementViewCount(@Param('id', ParseIntPipe) id: number) {
+    const document = await this.documentsService.findOne(id);
+    await this.documentsService.incrementViewCount(id, document.visibility);
+  }
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return await this.documentsService.findOne(id);
@@ -135,4 +157,5 @@ export class DocumentsController {
   ) {
     return await this.documentsService.updateDocumentStatus(id, status);
   }
+  
 }

@@ -15,9 +15,9 @@ export interface Document {
   visibility: DocumentVisibility;
 
   createdAt: string;
-
+  mimeType: string;
   ownerUserId: number;
-
+  originalName: string;
   categoryId: number;
   pageCount: number | null;
   viewCount: number;

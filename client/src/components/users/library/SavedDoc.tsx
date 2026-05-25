@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   changeDocumentVisibility,
   getMyDocuments,
+  incrementDocumentViewCount,
   updateDocumentStatus,
 } from "../../../services/documentService";
 import type {
@@ -96,7 +97,13 @@ const SavedDoc = ({ activeTab, searchQuery }: SavedDocProps) => {
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE,
   );
-
+  const handleViewCountIncrement = async (id: number) => {
+    try {
+      await incrementDocumentViewCount(id); 
+    } catch (error) {
+      console.error("Error incrementing view count:", error);
+    }
+  };
   return (
     <>
       {filteredDocs.length > 0 ? (
@@ -133,8 +140,7 @@ const SavedDoc = ({ activeTab, searchQuery }: SavedDocProps) => {
                   )}
                 </div>
               </div>
-
-              <Link to={`/library/${doc.id}`} className="block flex-1">
+              <Link to={`/library/${doc.id}`} className="block flex-1" onClick={() => handleViewCountIncrement(doc.id)}>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 line-clamp-2 group-hover:text-slate-700 dark:group-hover:text-slate-300">
                   {doc.title}
                 </h3>

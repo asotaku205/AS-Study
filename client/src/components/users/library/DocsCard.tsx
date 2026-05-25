@@ -2,8 +2,16 @@ import { Link } from "react-router-dom";
 import { BookOpen, Eye, FileText, Sparkles, Star, Zap } from "lucide-react";
 import type { Document } from "../../../types/documentTypes";
 import useGetFileBadge from "../../../hooks/useGetFileBadge";
-const DocsCard = ({docs}: {docs: Document}) => {
+import { incrementDocumentViewCount } from "../../../services/documentService";
+const DocsCard = ({ docs }: { docs: Document }) => {
   const getFileBadge = useGetFileBadge();
+  const handleViewCountIncrement = async () => {
+    try {
+      await incrementDocumentViewCount(docs.id);
+    } catch (error) {
+      console.error("Error incrementing view count:", error);
+    }
+  };
   return (
     <article className="group flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 overflow-hidden">
       {/* Card Header */}
@@ -28,11 +36,11 @@ const DocsCard = ({docs}: {docs: Document}) => {
         </div>
 
         {/* Title */}
-        <Link to={`/library/${docs?.id}`}>
-          <h3 className="font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">
-           {docs?.title}
-          </h3>
-        </Link>
+          <Link to={`/library/${docs?.id}`} className="block" onClick={handleViewCountIncrement}>
+            <h3 className="font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">
+              {docs?.title}
+            </h3>
+          </Link>
 
         {/* Description */}
         <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed font-medium">
