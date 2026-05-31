@@ -10,10 +10,13 @@ import {
   Share2,
   Zap,
   Download,
+  Copy,
+  Check,
+  RotateCw,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Document } from "../types/documentTypes";
-import { downloadDocument, getDocumentById } from "../services/documentService";
+import { downloadDocument, getDocumentById, runOcrForDocument } from "../services/documentService";
 import { useParams } from "react-router-dom";
 import useGetFileBadge from "../hooks/useGetFileBadge";
 import PreviewDocument from "../components/users/library/PreviewDocument";
@@ -21,6 +24,31 @@ const DocsDetail = () => {
   const [doc, setDoc] = useState<Document>();
   const { id } = useParams<{ id: string }>();
   const numericId = Number(id);
+
+  const [isOcrLoading, setIsOcrLoading] = useState(false);
+  const [ocrError, setOcrError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const handleRunOcr = async () => {
+    if (!doc) return;
+    setIsOcrLoading(true);
+    setOcrError("");
+    try {
+      const updatedDoc = await runOcrForDocument(doc.id);
+      setDoc(updatedDoc);
+    } catch (err: any) {
+      console.error(err);
+      setOcrError(err.response?.data?.message || "Không thể thực hiện trích xuất chữ. Vui lòng thử lại.");
+    } finally {
+      setIsOcrLoading(false);
+    }
+  };
+
+  const handleCopyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   useEffect(() => {
     const loadDoc = async () => {
       try {
@@ -191,6 +219,95 @@ const DocsDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* OCR & Text Extraction Section */}
+      {doc && (doc.mimeType?.startsWith("image/") || doc.mimeType === "application/pdf" || doc.fileUrl?.endsWith(".pdf") || /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(doc.fileUrl)) && (
+        <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 md:p-8 mb-8 relative overflow-hidden">
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                Trích xuất văn bản bằng AI
+              </h2>
+            </div>
+            {doc.ocrText && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleCopyText(doc.ocrText || "")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-green-500" /> Đã sao chép
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" /> Sao chép chữ
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleRunOcr}
+                  disabled={isOcrLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 cursor-pointer"
+                  title="Nhận diện lại"
+                >
+                  <RotateCw className={`w-3.5 h-3.5 ${isOcrLoading ? "animate-spin" : ""}`} /> Quét lại
+                </button>
+              </div>
+            )}
+          </div>
+
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+            {doc.mimeType === "application/pdf" || doc.fileUrl?.endsWith(".pdf")
+              ? "Tự động phân tích và trích xuất toàn bộ văn bản từ tệp tài liệu PDF phục vụ việc đọc và học tập trực quan."
+              : "Sử dụng công nghệ AI OCR nhận dạng ký tự tiếng Việt & tiếng Anh để trích xuất văn bản từ hình ảnh."}
+          </p>
+
+          {ocrError && (
+            <div className="p-4 mb-4 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-sm font-semibold rounded-2xl border border-red-100 dark:border-red-900/50">
+              {ocrError}
+            </div>
+          )}
+
+          {isOcrLoading ? (
+            <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
+              <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="text-center">
+                <p className="font-bold text-slate-800 dark:text-white">Đang phân tích & trích xuất văn bản...</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Quá trình này có thể mất từ 10-30 giây tùy vào dung lượng tệp.</p>
+              </div>
+            </div>
+          ) : doc.ocrText ? (
+            <div className="relative">
+              <pre className="max-h-60 overflow-y-auto whitespace-pre-wrap break-words font-mono text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-inner leading-relaxed">
+                {doc.ocrText}
+              </pre>
+              <div className="absolute bottom-2 right-2 pointer-events-none opacity-40">
+                <FileText className="w-6 h-6 text-slate-400" />
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-700 dark:text-slate-300">Tài liệu chưa được trích xuất văn bản</h4>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
+                  Trích xuất văn bản giúp bạn dễ dàng đọc tài liệu, sao chép nội dung và trò chuyện học tập cùng AI.
+                </p>
+              </div>
+              <button
+                onClick={handleRunOcr}
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-colors flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95 duration-150"
+              >
+                <Sparkles className="w-4 h-4" /> Bắt đầu trích xuất chữ
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row gap-4">

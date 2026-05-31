@@ -7,32 +7,37 @@ type QuizQuestion = {
   options: string[];
   correctAnswer: number;
   hint: string;
+  explanation?: string;
 };
 
 type QuestionProps = {
   currentQuestionIdx: number;
   mockQuiz: QuizQuestion[];
-};
-
-const Question = ({
-  currentQuestionIdx,
-  mockQuiz,
-  isChatOpen,
-  setIsChatOpen,
-}: QuestionProps & {
+  answers: Record<number, number>;
+  onSelectOption: (questionId: number, optionIdx: number) => void;
   isChatOpen: boolean;
   setIsChatOpen: (isOpen: boolean) => void;
+};
+
+const Question: React.FC<QuestionProps> = ({
+  currentQuestionIdx,
+  mockQuiz,
+  answers,
+  onSelectOption,
+  isChatOpen,
+  setIsChatOpen,
 }) => {
   const [showHint, setShowHint] = useState<Record<number, boolean>>({});
-  const [answers, setAnswers] = useState<Record<number, number>>({});
 
   const currentQ = mockQuiz[currentQuestionIdx];
+  if (!currentQ) return null;
+
   const handleToggleHint = () => {
     setShowHint((prev) => ({ ...prev, [currentQ.id]: !prev[currentQ.id] }));
   };
 
   const handleSelectOption = (optionIdx: number) => {
-    setAnswers((prev) => ({ ...prev, [currentQ.id]: optionIdx }));
+    onSelectOption(currentQ.id, optionIdx);
   };
 
   return (
@@ -40,7 +45,7 @@ const Question = ({
       <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900">
         <div>
           <h2 className="font-bold text-slate-800 dark:text-slate-200">
-            Quiz: Cơ bản về Web Development
+            Quiz: Câu hỏi ôn tập AI
           </h2>
           <div className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
             Câu {currentQuestionIdx + 1} / {mockQuiz.length}
@@ -49,7 +54,7 @@ const Question = ({
         <div className="flex gap-3">
           <div className="flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-lg font-mono font-bold shadow-sm">
             <Clock className="w-4 h-4" />
-            <span>00:00</span>
+            <span>AI Powered</span>
           </div>
           {!isChatOpen && (
             <button
@@ -68,7 +73,7 @@ const Question = ({
             <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-relaxed">
               {currentQ.question}
             </h3>
-            {!showHint[currentQ.id] && (
+            {!showHint[currentQ.id] && currentQ.hint && (
               <button
                 onClick={handleToggleHint}
                 className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0 border border-slate-200 dark:border-slate-700"
@@ -79,7 +84,7 @@ const Question = ({
             )}
           </div>
 
-          {showHint[currentQ.id] && (
+          {showHint[currentQ.id] && currentQ.hint && (
             <div className="overflow-hidden">
               <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl flex gap-3 text-slate-800 dark:text-slate-200">
                 <Sparkles className="w-5 h-5 shrink-0 mt-0.5 text-slate-500 dark:text-slate-400" />

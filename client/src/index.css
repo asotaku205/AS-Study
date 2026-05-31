@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -184,3 +185,22 @@
     line-height: 1.5;
   }
 }
+
+/* Typing cursor for streaming AI responses */
+.typing > *:last-child::after {
+  content: " ▍";
+  display: inline-block;
+  vertical-align: middle;
+  animation: cursor-blink 1s step-end infinite;
+  color: #1e3a8a; /* blue-900 */
+}
+
+.dark .typing > *:last-child::after {
+  color: #60a5fa; /* blue-400 */
+}
+
+@keyframes cursor-blink {
+  from, to { opacity: 1; }
+  50% { opacity: 0; }
+}
+

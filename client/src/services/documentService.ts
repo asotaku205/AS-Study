@@ -1,4 +1,4 @@
-import type { DocumentStatus, DocumentVisibility } from "../types/documentTypes";
+import type { Document, DocumentStatus, DocumentVisibility } from "../types/documentTypes";
 import api from "./api";
 
 export const uploadDocument = async (formdata: FormData) => {
@@ -63,5 +63,9 @@ export const getPreviewDocument = async (id: number) => {
     responseType: "blob",
   });
 
+  return response.data;
+};
+export const runOcrForDocument = async (id: number): Promise<Document> => {
+  const response = await api.post(`/documents/${id}/ocr`);
   return response.data;
 };

@@ -14,7 +14,8 @@ export class UploadDocumentDto {
   ownerUserId: number;
   @Type(() => Number)
   @IsNumber()
-  categoryId: number;
+  @IsOptional()
+  categoryId?: number;
 
   @IsOptional()
   @IsEnum(DocumentVisibility)

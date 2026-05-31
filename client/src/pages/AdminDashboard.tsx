@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -55,7 +55,24 @@ const AdminDashboard = () => {
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  const [isDark, setTheme] = useState<"light" | "dark">("light");
+  const [isDark, setTheme] = useState<"light" | "dark">(() => {
+    // Khởi tạo từ localStorage hoặc system preference
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark" || saved === "light") return saved;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
+
+  // Áp dụng class dark vào DOM mỗi khi theme thay đổi
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    localStorage.setItem("theme", isDark);
+  }, [isDark]);
+
   const [viewingDoc, setViewingDoc] = useState<Document | null>(null);
   const [editingCategory, setEditingCategory] = useState<
     Category | null | "new"

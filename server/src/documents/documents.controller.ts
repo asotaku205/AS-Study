@@ -147,8 +147,8 @@ export class DocumentsController {
     return await this.documentsService.findOne(id);
   }
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return await this.documentsService.deleteDocument(+id);
+  async remove(@Param('id') id: string, @Request() req) {
+    return await this.documentsService.deleteDocument(+id, req.user?.userId);
   }
   @Patch(':id/status')
   async updateStatus(
@@ -157,5 +157,9 @@ export class DocumentsController {
   ) {
     return await this.documentsService.updateDocumentStatus(id, status);
   }
-  
+
+  @Post(':id/ocr')
+  async runOcr(@Param('id', ParseIntPipe) id: number) {
+    return await this.documentsService.runOcr(id);
+  }
 }

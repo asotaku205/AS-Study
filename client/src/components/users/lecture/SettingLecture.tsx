@@ -1,9 +1,12 @@
+import React from "react";
 import { Settings2, BrainCircuit, Target, Lightbulb } from "lucide-react";
-import { useState } from "react";
-const SettingLecture = () => {
-  const [studyMode, setStudyMode] = useState<
-    "comprehensive" | "summary" | "practical"
-  >("comprehensive");
+
+interface SettingLectureProps {
+  studyMode: "comprehensive" | "summary" | "practical";
+  setStudyMode: (val: "comprehensive" | "summary" | "practical") => void;
+}
+
+const SettingLecture: React.FC<SettingLectureProps> = ({ studyMode, setStudyMode }) => {
 
   return (
     <section className="relative z-10">

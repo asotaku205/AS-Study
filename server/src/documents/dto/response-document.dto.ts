@@ -30,5 +30,8 @@ export class DocumentResponseDto {
   status: DocumentStatus;
 
   @Expose()
+  ocrText: string | null;
+
+  @Expose()
   createdAt: Date;
 }

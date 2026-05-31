@@ -79,6 +79,9 @@ export class Document {
   @Column({ type: 'timestamp', nullable: true })
   publishedAt: Date | null;
 
+  @Column({ type: 'text', nullable: true, name: 'ocr_text' })
+  ocrText: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

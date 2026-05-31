@@ -1,10 +1,19 @@
+import React from "react";
 import { Settings2 } from "lucide-react";
-import { useState } from "react";
-const SettingQuiz = () => {
-  const [difficulty, setDifficulty] = useState<"basic" | "advanced" | "expert">(
-    "basic",
-  );
-  const [questionCount, setQuestionCount] = useState(5);
+
+interface SettingQuizProps {
+  difficulty: "basic" | "advanced" | "expert";
+  setDifficulty: (val: "basic" | "advanced" | "expert") => void;
+  questionCount: number;
+  setQuestionCount: (val: number) => void;
+}
+
+const SettingQuiz: React.FC<SettingQuizProps> = ({
+  difficulty,
+  setDifficulty,
+  questionCount,
+  setQuestionCount,
+}) => {
   return (
     <section>
       <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">

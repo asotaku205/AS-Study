@@ -17,22 +17,21 @@ export class AuthService {
   // Xác thực người dùng
   async validateUser(signInDto: SignInDto): Promise<any> {
     const user = await this.usersService.findOneByEmail(signInDto.email);
-    if(user.isBanned) {
-      throw new ForbiddenException('Tài khoản đã bị khóa');
-    }
     if (!user) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+    }
+    if (user.isBanned) {
+      throw new ForbiddenException('Tài khoản đã bị khóa');
     }
     const passwordMatch = await bcrypt.compare(
       signInDto.password,
       user.password,
     );
-    if (user && passwordMatch) {
-      const { password, ...result } = user;
-      return result;
+    if (!passwordMatch) {
+      throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
-    
-    return null;
+    const { password, ...result } = user;
+    return result;
   }
   // Tạo access token và refresh token
   async getTokens(

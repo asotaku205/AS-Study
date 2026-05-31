@@ -21,6 +21,7 @@ export interface Document {
   categoryId: number;
   pageCount: number | null;
   viewCount: number;
+  ocrText?: string | null;
   owner?: {
     id: number;
     name: string;

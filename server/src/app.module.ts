@@ -13,6 +13,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { join } from 'path';
     DatabaseModule,
     DocumentsModule,
     CategoriesModule,
+    ChatModule,
     
   ],
   controllers: [AppController],

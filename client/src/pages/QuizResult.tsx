@@ -1,49 +1,101 @@
-import { ArrowRight, BarChart3, BrainCircuit, CheckCircle2, Clock, RefreshCw, Sparkles, Target, Trophy, XCircle } from "lucide-react"
-import { Link } from "react-router-dom"
-const QuizResult = () => {
+import { ArrowRight, BarChart3, BrainCircuit, CheckCircle2, Clock, RefreshCw, Sparkles, Target, Trophy, XCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 
-  const resultsData = {
-  score: 80,
-  time: "12:34",
-  correct: 8,
-  total: 10,
-  aiRecommendations: [
-    {
-      id: 1,
-      title: "Chính sách Tiền tệ & Lạm phát",
-      description: "Bạn gặp khó khăn trong việc phân biệt các công cụ của NHTW. Hãy xem lại chương 4 trong tài liệu tham khảo.",
-      actionText: "VÀO CHẾ ĐỘ HỌC TẬP",
-      actionLink: "/study/new"
-    },
-    {
-      id: 2,
-      title: "Mô hình IS-LM trong Kinh tế mở",
-      description: "Sự hiểu biết về tác động của tỷ giá hối đoái còn hạn chế. Bài quiz này cho thấy tỷ lệ sai 60% ở mảng này.",
-      actionText: "LUYỆN TẬP THÊM",
-      actionLink: "/create-quiz"
-    }
-  ],
-  questions: [
-    {
-      id: 1,
-      q: "Ngôn ngữ lập trình nào được sử dụng chủ yếu để xây dựng giao diện web?",
-      yourAnswer: "JavaScript",
-      correctAnswer: "JavaScript",
-      isCorrect: true,
-      explanation: "JavaScript là ngôn ngữ chuẩn để tạo tính tương tác trên trình duyệt, kết hợp cùng HTML và CSS tạo nên giao diện web động."
-    },
-    {
-      id: 2,
-      q: "ReactJS là một thư viện của ngôn ngữ nào?",
-      yourAnswer: "TypeScript",
-      correctAnswer: "JavaScript",
-      isCorrect: false,
-      explanation: "Mặc dù ReactJS thường được dùng với TypeScript hiện nay, nhưng bản chất nó là một thư viện của JavaScript, được phát triển bởi Facebook."
-    }
-  ]
+type AIRecommendation = {
+  id: number;
+  title: string;
+  description: string;
+  actionText: string;
+  actionLink: string;
 };
+
+type QuestionResult = {
+  id: number;
+  q: string;
+  yourAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  explanation: string;
+};
+
+type QuizResultData = {
+  score: number;
+  time: string;
+  correct: number;
+  total: number;
+  aiRecommendations: AIRecommendation[];
+  questions: QuestionResult[];
+};
+
+const QuizResult = () => {
+  const [resultsData, setResultsData] = useState<QuizResultData | null>(null);
+
+  useEffect(() => {
+    const activeResultStr = localStorage.getItem("activeQuizResult");
+    if (activeResultStr) {
+      try {
+        const parsed = JSON.parse(activeResultStr);
+        setResultsData(parsed);
+        return;
+      } catch (err) {
+        console.error("Lỗi khi load activeQuizResult:", err);
+      }
+    }
+
+    // Fallback to mock data
+    setResultsData({
+      score: 80,
+      time: "12:34",
+      correct: 8,
+      total: 10,
+      aiRecommendations: [
+        {
+          id: 1,
+          title: "Chính sách Tiền tệ & Lạm phát",
+          description: "Bạn gặp khó khăn trong việc phân biệt các công cụ của NHTW. Hãy xem lại chương 4 trong tài liệu tham khảo.",
+          actionText: "VÀO CHẾ ĐỘ HỌC TẬP",
+          actionLink: "/study"
+        },
+        {
+          id: 2,
+          title: "Mô hình IS-LM trong Kinh tế mở",
+          description: "Sự hiểu biết về tác động của tỷ giá hối đoái còn hạn chế. Bài quiz này cho thấy tỷ lệ sai 60% ở mảng này.",
+          actionText: "LUYỆN TẬP THÊM",
+          actionLink: "/create-quiz"
+        }
+      ],
+      questions: [
+        {
+          id: 1,
+          q: "Ngôn ngữ lập trình nào được sử dụng chủ yếu để xây dựng giao diện web?",
+          yourAnswer: "JavaScript",
+          correctAnswer: "JavaScript",
+          isCorrect: true,
+          explanation: "JavaScript là ngôn ngữ chuẩn để tạo tính tương tác trên trình duyệt, kết hợp cùng HTML và CSS tạo nên giao diện web động."
+        },
+        {
+          id: 2,
+          q: "ReactJS là một thư viện của ngôn ngữ nào?",
+          yourAnswer: "TypeScript",
+          correctAnswer: "JavaScript",
+          isCorrect: false,
+          explanation: "Mặc dù ReactJS thường được dùng với TypeScript hiện nay, nhưng bản chất nó là một thư viện của JavaScript, được phát triển bởi Facebook."
+        }
+      ]
+    });
+  }, []);
+
+  if (!resultsData) {
+    return (
+      <div className="flex h-[calc(100vh-8rem)] items-center justify-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <p className="text-slate-500 dark:text-slate-400 font-bold">Đang tải kết quả...</p>
+      </div>
+    );
+  }
+
   return (
-     <div className="max-w-5xl mx-auto space-y-12 pb-12">
+    <div className="max-w-5xl mx-auto space-y-12 pb-12">
       {/* Overview Card */}
       <section 
         className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden shadow-sm"
@@ -93,7 +145,7 @@ const QuizResult = () => {
               <RefreshCw className="w-5 h-5" /> Thử lại
             </Link>
             <Link
-              to="/study/new"
+              to="/study"
               className="px-8 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-semibold hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
               <BrainCircuit className="w-5 h-5" /> Ôn tập ngay <ArrowRight className="w-4 h-4 ml-1" />
@@ -109,10 +161,10 @@ const QuizResult = () => {
         <div className="flex justify-between items-start mb-8">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              Đề xuất từ AS Scholarly
+              Đề xuất từ AI Scholarly
             </h2>
             <p className="text-slate-600 dark:text-slate-400 text-base">
-              Dựa trên các câu trả lời chưa chính xác, bạn nên tập trung vào:
+              Dựa trên các câu trả lời của bạn, chúng tôi đề xuất:
             </p>
           </div>
           <Sparkles className="w-8 h-8 text-slate-400 dark:text-slate-500 shrink-0 mt-1" />
@@ -202,13 +254,15 @@ const QuizResult = () => {
                     )}
                   </div>
 
-                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 mt-4 flex gap-3">
-                    <BrainCircuit className="w-5 h-5 text-slate-700 dark:text-slate-300 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-semibold text-slate-900 dark:text-white block mb-1">AI Giải thích:</span>
-                      <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{q.explanation}</p>
+                  {q.explanation && (
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 mt-4 flex gap-3">
+                      <BrainCircuit className="w-5 h-5 text-slate-700 dark:text-slate-300 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900 dark:text-white block mb-1">AI Giải thích:</span>
+                        <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{q.explanation}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -216,7 +270,7 @@ const QuizResult = () => {
         </div>
       </section>
     </div>
-  )
-}
+  );
+};
 
-export default QuizResult
+export default QuizResult;
