@@ -21,6 +21,8 @@ import * as path from 'path';
 import { Response } from 'express';
 import Tesseract from 'tesseract.js';
 import { PDFParse } from 'pdf-parse';
+import * as mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
 
 @Injectable()
 export class DocumentsService {
@@ -209,36 +211,72 @@ export class DocumentsService {
   async runOcr(id: number): Promise<DocumentResponseDto> {
     const document = await this.findOne(id);
 
+    const mime = document.mimeType;
+    const name = document.originalName;
 
-    const isImage = document.mimeType.startsWith('image/') || 
-      /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(document.originalName);
+    const isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(name);
+    const isPdf   = mime === 'application/pdf' || /\.pdf$/i.test(name);
+    const isDocx  = mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || /\.docx$/i.test(name);
+    const isDoc   = mime === 'application/msword' || /\.doc$/i.test(name);
+    const isTxt   = mime === 'text/plain' || mime === 'text/markdown' || mime === 'text/x-markdown' || /\.(txt|md|csv)$/i.test(name);
+    const isXlsx  = mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || mime === 'application/vnd.ms-excel' || /\.(xlsx|xls)$/i.test(name);
 
-    const isPdf = document.mimeType === 'application/pdf' || 
-      /\.pdf$/i.test(document.originalName);
-
-    if (!isImage && !isPdf) {
-      throw new BadRequestException('Chỉ hỗ trợ trích xuất chữ cho tệp hình ảnh hoặc tài liệu PDF');
+    const supported = isImage || isPdf || isDocx || isDoc || isTxt || isXlsx;
+    if (!supported) {
+      throw new BadRequestException('Định dạng file không được hỗ trợ trích xuất văn bản');
     }
 
     const filePath = path.join(process.cwd(), document.fileUrl);
-
     if (!fs.existsSync(filePath)) {
       throw new NotFoundException('Không tìm thấy tệp tài liệu trên máy chủ');
     }
 
     try {
       let text = '';
+
       if (isImage) {
+        // Ảnh → luôn dùng OCR
         const result = await Tesseract.recognize(filePath, 'eng+vie');
         text = result.data.text;
+
       } else if (isPdf) {
+        // PDF → thử đọc text layer trước
         const dataBuffer = fs.readFileSync(filePath);
         const parser = new PDFParse({ data: dataBuffer });
         const parsedData = await parser.getText();
-        text = parsedData.text;
+        const directText = (parsedData.text || '').trim();
+
+        if (directText.length > 50) {
+          // PDF có text layer → đọc trực tiếp
+          text = directText;
+        } else {
+          // PDF scan → dùng OCR
+          const result = await Tesseract.recognize(filePath, 'eng+vie');
+          text = result.data.text;
+        }
+
+      } else if (isDocx || isDoc) {
+        // DOCX/DOC → dùng mammoth
+        const result = await mammoth.extractRawText({ path: filePath });
+        text = result.value;
+
+      } else if (isTxt) {
+        // TXT/MD/CSV → đọc trực tiếp
+        text = fs.readFileSync(filePath, 'utf-8');
+
+      } else if (isXlsx) {
+        // XLSX/XLS → dùng xlsx
+        const workbook = XLSX.readFile(filePath);
+        const lines: string[] = [];
+        workbook.SheetNames.forEach(sheetName => {
+          const sheet = workbook.Sheets[sheetName];
+          lines.push(`=== ${sheetName} ===`);
+          lines.push(XLSX.utils.sheet_to_csv(sheet));
+        });
+        text = lines.join('\n');
       }
 
-      // PostgreSQL does not support storing null characters (0x00) in text columns
+      // PostgreSQL không hỗ trợ ký tự null (0x00)
       document.ocrText = (text || '').replace(/\u0000/g, '');
       const updated = await this.documentsRepository.save(document);
 
@@ -246,8 +284,8 @@ export class DocumentsService {
         excludeExtraneousValues: true,
       });
     } catch (error) {
-      console.error('Error during OCR/text extraction processing:', error);
-      throw new BadRequestException('Không thể trích xuất chữ từ tệp này: ' + error.message);
+      console.error('Error during text extraction:', error);
+      throw new BadRequestException('Không thể trích xuất văn bản từ tệp này: ' + error.message);
     }
   }
 }
