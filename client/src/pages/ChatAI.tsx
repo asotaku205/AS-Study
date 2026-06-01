@@ -134,7 +134,7 @@ const ChatAI = () => {
               <span>Trợ lý AI</span>
               {selectedDocTitle && (
                 <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full inline-block max-w-[150px] md:max-w-[300px] truncate align-middle">
-                  📚 {selectedDocTitle}
+                   {selectedDocTitle}
                 </span>
               )}
             </div>

@@ -18,7 +18,7 @@ const Header = () => {
     { name: "Trang chủ", path: "/" },
     { name: "Thư viện", path: "/library" },
     { name: "Tạo Quiz", path: "/create-quiz" },
-    { name: "Học tập", path: "/study" },
+    { name: "Học tập", path: "/create-lecture" },
     { name: "Chat AI", path: "/chat" },
   ];
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
@@ -72,7 +72,7 @@ const Header = () => {
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.path || 
-                (link.path === '/study' && location.pathname.startsWith('/study')) || 
+                (link.path === '/create-lecture' && location.pathname.startsWith('/create-lecture')) || 
                 (link.path === '/chat' && location.pathname.startsWith('/chat')) ||
                 (link.path === '/library' && location.pathname.startsWith('/library'));
               return (
