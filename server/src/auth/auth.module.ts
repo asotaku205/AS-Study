@@ -9,6 +9,8 @@ import { UserModule } from '../users/user.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LocalStrategy } from './passport/local.strategy';
 import { JwtStrategy } from './passport/jwt.strategy';
+import { GoogleStrategy } from './passport/google.strategy';
+import { MailModule } from '../mail/mail.module';
 
 
 
@@ -22,10 +24,11 @@ import { JwtStrategy } from './passport/jwt.strategy';
     }),
     inject: [ConfigService],
   }),
-  UserModule
+  UserModule,
+  MailModule
 ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy,JwtStrategy ],
+  providers: [AuthService, LocalStrategy,JwtStrategy, GoogleStrategy ],
   
   exports: [AuthService],
 })

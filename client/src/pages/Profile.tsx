@@ -17,7 +17,8 @@ import { useEffect, useState } from "react";
 type UserProfile = {
   id: number;
   name: string;
-  email: string;
+  username: string;
+  email: string | null;
   role: string;
   createdAt: string;
   updatedAt: string;
@@ -78,6 +79,7 @@ const Profile = () => {
           <ProfileCard
             avatar={(userProfile?.name ?? "U").slice(0, 2).toUpperCase()}
             name={userProfile?.name ?? "Người dùng"}
+            username={userProfile?.username ?? ""}
             gmail={userProfile?.email ?? ""}
             docs={0}
             quizzes={0}

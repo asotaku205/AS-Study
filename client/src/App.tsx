@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ErrorBoundary from "./components/ErrorBoundary";
+import GoogleCallback from "./components/GoogleAuthCallBack";
 
 // Lazy load tất cả pages để giảm initial bundle size
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -23,6 +24,10 @@ const StudyMode = lazy(() => import("./pages/StudyMode"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Setting = lazy(() => import("./pages/Setting"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
+const SetupUsername = lazy(() => import("./pages/SetupUsername"));
 const AdminRoute = lazy(() =>
   import("./components/admin/AdminRoute").then((m) => ({ default: m.AdminRoute }))
 );
@@ -49,6 +54,9 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/library" element={<Library />} />
             <Route path="/library/:id" element={<DocsDetail />} />
             <Route path="/personal-library" element={<PersonalLibrary />} />
@@ -62,6 +70,8 @@ function App() {
             <Route path="/study" element={<StudyMode />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Setting />} />
+            <Route path="/setup-username" element={<SetupUsername />} />
+            <Route path="/oauth/google/callback" element={<GoogleCallback />} />
           </Route>
 
           <Route element={<AdminRoute />}>

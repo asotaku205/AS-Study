@@ -1,6 +1,6 @@
 import React from "react";
 
-const ProfileCard = ({ avatar, name, gmail, docs, quizzes }: { avatar: string; name: string; gmail: string; docs: number; quizzes: number }) => {
+const ProfileCard = ({ avatar, name, username, gmail, docs, quizzes }: { avatar: string; name: string; username: string; gmail: string; docs: number; quizzes: number }) => {
   
   return (
     <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-white/40 dark:border-slate-800 p-8 text-center shadow-lg">
@@ -10,8 +10,11 @@ const ProfileCard = ({ avatar, name, gmail, docs, quizzes }: { avatar: string; n
       <h2 className="text-xl font-bold text-slate-900 dark:text-white">
         {name}
       </h2>
+      <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">
+        @{username}
+      </p>
       <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-6">
-        {gmail}
+        {gmail || "Chưa liên kết Gmail"}
       </p>
 
       <div className="pt-6 border-t border-slate-200/50 dark:border-slate-700/50 grid grid-cols-2 gap-4">

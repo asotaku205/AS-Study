@@ -19,7 +19,7 @@ const Register = () => {
   const schema = z
     .object({
       name: z.string().min(1, "Vui lòng nhập tên của bạn"),
-      email: z.string().email("Email không hợp lệ"),
+      username: z.string().min(3, "Tối thiểu 3 ký tự"),
       password: z.string().min(6, "Tối thiểu 6 ký tự"),
       confirmPassword: z.string(),
     })
@@ -38,13 +38,13 @@ const Register = () => {
 
   const handleRegister = async (data: {
     name: string;
-    email: string;
+    username: string;
     password: string;
     confirmPassword: string;
   }) => {
     setIsLoading(true);
     try {
-      await register(data.name, data.email, data.password);
+      await register(data.name, data.username, data.password);
       navigate("/login");
       toast.success("Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.");
     } catch (err) {
@@ -85,18 +85,18 @@ const Register = () => {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Email
+                Tên đăng nhập
               </label>
               <div className="mt-1">
                 <input
-                  type="email"
-                  {...registerField("email")}
+                  type="text"
+                  {...registerField("username")}
                   className="appearance-none block w-full px-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 sm:text-sm transition-colors"
-                  placeholder="name@example.com"
+                  placeholder="tên đăng nhập"
                 />
-                {errors.email && (
+                {errors.username && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {errors.email.message}
+                    {errors.username.message}
                   </p>
                 )}
               </div>
@@ -174,6 +174,13 @@ const Register = () => {
                   "Đăng ký tài khoản"
                 )}
               </button>
+               <button
+              type="button"
+              className="w-full mt-4 inline-flex justify-center items-center py-2.5 px-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg shadow-sm text-sm font-bold text-white dark:text-slate-300 bg-red-500 dark:bg-red-600 hover:bg-red-600 dark:hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+              onClick={() =>  window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`}
+            >
+              Đăng ký với Google
+            </button>
             </div>
           </form>
 

@@ -15,7 +15,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   const schema = z.object({
-    email: z.email("Email không hợp lệ"),
+    username: z.string().min(3, "Tối thiểu 3 ký tự"),
     password: z.string().min(6, "Tối thiểu 6 ký tự"),
   });
 
@@ -26,10 +26,10 @@ const Login = () => {
   } = useForm({
     resolver: zodResolver(schema),
   });
-  const handleLogin = async (data: { email: string; password: string }) => {
+  const handleLogin = async (data: { username: string; password: string }) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
+      await login(data.username, data.password);
       toast.success("Đăng nhập thành công!");
       navigate("/");
     } catch (err:any) {
@@ -54,18 +54,18 @@ const Login = () => {
           <form className="space-y-6" onSubmit={handleSubmit(handleLogin)}>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Email
+                Tên đăng nhập
               </label>
               <div className="mt-1 relative">
                 <input
-                  type="email"
-                  {...register("email")}
+                  type="text"
+                  {...register("username")}
                   className="appearance-none block w-full px-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 sm:text-sm transition-colors"
-                  placeholder="name@example.com"
+                  placeholder="Tên đăng nhập"
                 />
-                {errors.email && (
+                {errors.username && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {errors.email.message}
+                    {errors.username.message}
                   </p>
                 )}
               </div>
@@ -127,7 +127,7 @@ const Login = () => {
               </div>
             </div>
 
-            <div>
+            <div >
               <button
                 type="submit"
                 className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-slate-900 hover:bg-slate-950 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-colors"
@@ -139,6 +139,13 @@ const Login = () => {
                   "Đăng nhập"
                 )}
               </button>
+            <button
+              type="button"
+              className="w-full mt-4 inline-flex justify-center items-center py-2.5 px-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg shadow-sm text-sm font-bold text-white dark:text-slate-300 bg-red-500 dark:bg-red-600 hover:bg-red-600 dark:hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+              onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`}
+            >
+              Đăng nhập với Google
+            </button>
             </div>
           </form>
 

@@ -8,19 +8,19 @@ import { SignInDto } from '../dto/sign-in.dto';
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
     super({
-      usernameField: 'email',
+      usernameField: 'username',
       passwordField: 'password',
     });
   }
 
-  async validate(email: string, password: string): Promise<any> {
+  async validate(username: string, password: string): Promise<any> {
     const signInDto = new SignInDto();
-    signInDto.email = email;
+    signInDto.username = username;
     signInDto.password = password;
     const user = await this.authService.validateUser(signInDto);
     
     if (!user) {
-      throw new UnauthorizedException("Email hoặc mật khẩu không đúng");
+      throw new UnauthorizedException("Username hoặc mật khẩu không đúng");
     }
     return user;
   }

@@ -1,8 +1,8 @@
 import api, { setAccessToken } from "./api";
 
-export const login = async (email: string, password: string) => {
+export const login = async (username: string, password: string) => {
   try {
-    const res = await api.post("/auth/login", { email, password });
+    const res = await api.post("/auth/login", { username, password });
     const token = res.data.access_token;
     setAccessToken(token);
     const profileResponse = await api.get("/auth/profile");
@@ -26,9 +26,19 @@ export async function logout() {
   }
 }
 
-export const register = async (name: string, email: string, password: string) => {
+export const register = async (
+  name: string,
+  username: string,
+  password: string,
+  email?: string | null,
+) => {
     try {
-        const res = await api.post("/users/register", { name, email, password });
+        const res = await api.post("/users/register", {
+          name,
+          username,
+          password,
+          email: email || null,
+        });
         return res.data;
     } catch (error) {
         throw error;

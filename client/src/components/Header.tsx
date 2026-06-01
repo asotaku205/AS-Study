@@ -21,7 +21,7 @@ const Header = () => {
     { name: "Học tập", path: "/create-lecture" },
     { name: "Chat AI", path: "/chat" },
   ];
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; username: string; email: string | null } | null>(null);
   useEffect(() => {
     if (!isLoggedIn) {
       setUser(null);
@@ -105,10 +105,10 @@ const Header = () => {
                   <div className="absolute right-0 min-w-[220px] bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-2 z-[100] animate-in fade-in zoom-in-95 mt-2">
                     <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 mb-2">
                       <p className="text-sm font-bold text-slate-900 dark:text-white">
-                        {user?.name}
+                        {user?.name} (@{user?.username})
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        {user?.email}
+                        {user?.email || "Chưa liên kết Gmail"}
                       </p>
                     </div>
                     <Link

@@ -5,6 +5,10 @@ export class UpdateUserDto {
     @IsOptional()
     name?: string;
     @IsOptional()
+    username?: string;
+    @IsOptional()
+    email?: string;
+    @IsOptional()
     password?: string;
     
 

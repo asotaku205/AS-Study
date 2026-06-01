@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -32,12 +33,6 @@ export class UsersController {
   ): Promise<UserResponseDto> {
     return this.usersService.createUser(createUserDto);
   }
-
-  @Get('find')
-  @HttpCode(HttpStatus.OK)
-  async findOne(@Query('email') email: string): Promise<User> {
-    return this.usersService.findOneByEmail(email);
-  }
   @Patch(':id/ban')
   @Roles(UserRole.Admin)
   async banUser(@Param('id', ParseIntPipe) id: number, @Request() req) {
@@ -57,7 +52,11 @@ export class UsersController {
   async updateUser(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
+    @Request() req,
   ): Promise<UserResponseDto> {
+    if (req.user.role !== UserRole.Admin && req.user.userId !== id) {
+      throw new ForbiddenException('Bạn không có quyền chỉnh sửa người dùng này');
+    }
     return this.usersService.updateUser(id, updateUserDto);
   }
 
