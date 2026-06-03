@@ -85,11 +85,10 @@ const Overview = ({user,docs}: { user: User[]; docs: Document[] }) => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[
           { label: "Tổng người dùng", value: `${user.length}`, change: `+${user.filter(u => { const d = new Date(u.createdAt); const now = new Date(); return (now.getTime() - d.getTime()) < 7 * 24 * 60 * 60 * 1000; }).length} tuần này`, icon: Users, isPositive: true },
           { label: "Tài liệu hệ thống", value: `${docs.length}`, change: `+${docs.filter(d => { const dt = new Date(d.createdAt); const now = new Date(); return (now.getTime() - dt.getTime()) < 7 * 24 * 60 * 60 * 1000; }).length} tuần này`, icon: BookOpen, isPositive: true },
-          { label: "Lượt Quiz đã tạo", value: `${quizStats.totalQuizzes}`, change: `${Number(quizStats.growth) > 0 ? '+' : ''}${quizStats.growth}%`, icon: Activity, isPositive: Number(quizStats.growth) >= 0 },
           { label: "Cảnh báo hệ thống", value: `${mockLogs.filter(l => l.level === "ERROR" || l.level === "WARN").length}`, change: "", icon: AlertTriangle, isPositive: false },
         ].map((metric, idx) => (
           <div key={idx} className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 rounded-2xl border border-white/40 dark:border-slate-800 shadow-lg flex flex-col justify-between hover:scale-[1.02] transition-transform">

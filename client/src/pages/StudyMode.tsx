@@ -1,4 +1,4 @@
-import { BookOpen, Globe, MessageSquare, PenTool, Sparkles, Target, Zap } from "lucide-react";
+import { ArrowLeft, BookOpen, MessageSquare, PenTool, Sparkles, Target, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -9,6 +9,7 @@ const StudyMode = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [lectureTitle, setLectureTitle] = useState("Machine Learning Cơ bản & Ứng dụng");
   const [lectureContent, setLectureContent] = useState<string | null>(null);
+  const [documentId, setDocumentId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const activeLectureStr = localStorage.getItem("activeLecture");
@@ -17,6 +18,7 @@ const StudyMode = () => {
         const parsed = JSON.parse(activeLectureStr);
         if (parsed.title) setLectureTitle(parsed.title);
         if (parsed.content) setLectureContent(parsed.content);
+        if (parsed.documentId) setDocumentId(Number(parsed.documentId));
       } catch (err) {
         console.error("Lỗi khi load activeLecture:", err);
       }
@@ -31,24 +33,26 @@ const StudyMode = () => {
         
         {/* Header */}
         <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between z-10">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Chế độ học AI</span>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center justify-center p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Quay lại"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Chế độ học AI</span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {lectureTitle}
+              </h1>
             </div>
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              {lectureTitle}
-            </h1>
           </div>
           
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/upload')}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-            >
-              <Globe className="w-4 h-4" />
-              <span className="hidden sm:inline">Chia sẻ cộng đồng</span>
-            </button>
             {/* Toggle Chat Button */}
             {!isChatOpen && (
               <button 
@@ -134,14 +138,30 @@ const StudyMode = () => {
             {/* End of Lesson Actions */}
             <div className="mt-16 pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row gap-4">
               <button 
-                onClick={() => navigate('/study')}
+                onClick={() => {
+                  // Lưu context bài học hiện tại để FormCreate tạo bài kế tiếp
+                  localStorage.setItem("continueLecture", JSON.stringify({
+                    title: lectureTitle,
+                    content: lectureContent,
+                    documentId: documentId,
+                  }));
+                  navigate('/create-lecture?continue=1');
+                }}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-sm"
               >
                 <BookOpen className="w-5 h-5" />
-                Học tiếp chủ đề mới
+                Học tiếp chủ đề này
               </button>
               <button 
-                onClick={() => navigate('/create-quiz')}
+                onClick={() => {
+                  // Lưu toàn bộ nội dung bài học làm nguồn tạo quiz
+                  localStorage.setItem("lectureSourceForQuiz", JSON.stringify({
+                    title: lectureTitle,
+                    content: lectureContent,
+                    documentId: documentId,
+                  }));
+                  navigate('/create-quiz?fromLecture=1');
+                }}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-2 border-slate-200 dark:border-slate-700 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 <Target className="w-5 h-5" />
@@ -154,7 +174,7 @@ const StudyMode = () => {
 
       {/* Floating/Docked Chatbot UI */}
       {isChatOpen && (
-        <ChatBox setIsChatOpen={setIsChatOpen} />
+        <ChatBox setIsChatOpen={setIsChatOpen} documentId={documentId} />
       )}
     </div>
   );

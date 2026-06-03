@@ -93,14 +93,13 @@ export class UsersController {
     );
   }
 
-  @Roles(UserRole.Admin)
   @Get('all')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async findAll(): Promise<UserResponseDto[]> {
     return this.usersService.findAllUsersResponse();
   }
 
-  @Roles(UserRole.Admin)
   @Get('count')
   @HttpCode(HttpStatus.OK)
   async countUsers(): Promise<number> {

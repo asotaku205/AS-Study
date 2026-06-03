@@ -345,32 +345,41 @@ export class UsersService {
 
     const docs = await this.documentRepository
       .createQueryBuilder("document")
-      .select("DATE(document.createdAt)", "date")
+      .select("TO_CHAR(document.createdAt, 'YYYY-MM-DD')", "date")
       .addSelect("COUNT(*)", "count")
       .where("document.ownerUserId = :userId", { userId })
       .andWhere("document.createdAt >= :startDate", {
         startDate,
       })
-      .groupBy("DATE(document.createdAt)")
+      .groupBy("TO_CHAR(document.createdAt, 'YYYY-MM-DD')")
       .getRawMany();
 
     const quizzes = await this.quizRepository
       .createQueryBuilder("quiz")
-      .select("DATE(quiz.createdAt)", "date")
+      .select("TO_CHAR(quiz.createdAt, 'YYYY-MM-DD')", "date")
       .addSelect("COUNT(*)", "count")
       .where("quiz.userId = :userId", { userId })
       .andWhere("quiz.createdAt >= :startDate", {
         startDate,
       })
-      .groupBy("DATE(quiz.createdAt)")
+      .groupBy("TO_CHAR(quiz.createdAt, 'YYYY-MM-DD')")
       .getRawMany();
 
+    const formatDate = (val: any) => {
+      if (!val) return '';
+      if (val instanceof Date) return val.toISOString().split('T')[0];
+      const str = String(val);
+      if (str.includes(' ')) return str.split(' ')[0];
+      if (str.includes('T')) return str.split('T')[0];
+      return str;
+    };
+
     const docsMap = new Map(
-      docs.map((d) => [d.date, Number(d.count)]),
+      docs.map((d) => [formatDate(d.date), Number(d.count)]),
     );
 
     const quizMap = new Map(
-      quizzes.map((q) => [q.date, Number(q.count)]),
+      quizzes.map((q) => [formatDate(q.date), Number(q.count)]),
     );
 
     const result: { date: string; docs: number; quizz: number }[] = [];

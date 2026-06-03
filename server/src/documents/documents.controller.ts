@@ -103,15 +103,18 @@ export class DocumentsController {
   }
 
   @Get()
+  @Public()
   findAll() {
     return this.documentsService.findAll();
   }
   @Get('public')
+  @Public()
   async findPublicDocument() {
     const document = await this.documentsService.getPublicDocument();
     return document;
   }
   @Get('featured')
+  @Public()
   async findFeaturedDocuments() {
     return await this.documentsService.getFeaturedDocuments();
   }
@@ -143,20 +146,13 @@ export class DocumentsController {
   ) {
     return await this.documentsService.downloadDocument(id, res);
   }
-  @Public()
-  @Get(':id/preview')
-  async previewDocument(
-    @Param('id', ParseIntPipe) id: number,
-    @Res() res: Response,
-  ) {
-    return await this.documentsService.previewDocument(id, res);
-  }
   @Patch(':id')
   async incrementViewCount(@Param('id', ParseIntPipe) id: number) {
     const document = await this.documentsService.findOne(id);
     await this.documentsService.incrementViewCount(id, document.visibility);
   }
   @Get(':id')
+  @Public()
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return await this.documentsService.findOne(id);
   }

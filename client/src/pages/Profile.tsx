@@ -8,6 +8,8 @@ import {
   Upload,
   Zap,
   BarChart3,
+  Trophy,
+  CheckCircle2,
 } from "lucide-react";
 import ProfileCard from "../components/users/profile/ProfileCard";
 import { Link } from "react-router-dom";
@@ -60,7 +62,13 @@ const formatTimeAgo = (dateStr: string) => {
 
 const Profile = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [quizStats, setQuizStats] = useState({ totalQuizzes: 0, avgScore: 0 });
+  const [quizStats, setQuizStats] = useState({ 
+    totalQuizzes: 0, 
+    avgScore: 0,
+    highScore: 0,
+    totalQuestions: 0,
+    totalCorrectAnswers: 0
+  });
   const [docCount, setDocCount] = useState(0);
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>(
     [],
@@ -139,7 +147,6 @@ const Profile = () => {
             username={userProfile?.username ?? ""}
             gmail={userProfile?.email ?? ""}
             docs={docCount}
-            quizzes={quizStats.totalQuizzes}
           />
 
           {/* Recent Activity Card */}
@@ -186,7 +193,7 @@ const Profile = () => {
         {/* Right Column*/}
         <div className="lg:col-span-3 flex flex-col gap-6">
           {/* Quick Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 rounded-2xl border border-white/40 dark:border-slate-800 shadow-lg flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div className="p-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl shadow-md">
@@ -199,22 +206,6 @@ const Profile = () => {
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                   Thư viện cá nhân
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 rounded-2xl border border-white/40 dark:border-slate-800 shadow-lg flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                  <Target className="w-5 h-5" />
-                </div>
-              </div>
-              <div>
-                <p className="text-3xl font-black text-slate-900 dark:text-white mb-1">
-                  {quizStats.totalQuizzes}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
-                  Quiz đã tạo
                 </p>
               </div>
             </div>
@@ -370,16 +361,6 @@ const Profile = () => {
                     strokeWidth={3}
                     fillOpacity={1}
                     fill="url(#colorStudyTime)"
-                  />
-                  <Area
-                    type="monotone"
-                    name="Quiz đã tạo"
-                    dataKey="quiz"
-                    stroke={isDark ? "#94A3B8" : "#64748B"}
-                    strokeWidth={2}
-                    strokeDasharray="4 4"
-                    fillOpacity={1}
-                    fill="url(#colorQuizzes)"
                   />
                 </AreaChart>
               </ResponsiveContainer>

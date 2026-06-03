@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ChatBox from "../components/users/ChatBox";
 import { saveQuizResult } from "../services/quizzService";
+import { getCurrentUserId } from "../services/authService";
 type QuizQuestion = {
   id: number;
   question: string;
@@ -19,8 +20,10 @@ const QuizMode = () => {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [mockQuiz, setMockQuiz] = useState<QuizQuestion[]>([]);
   const [quizTitle, setQuizTitle] = useState("Trắc nghiệm ôn tập");
+  const [documentId, setDocumentId] = useState<number | undefined>(undefined);
 
   const navigate = useNavigate();
+  const [startTime] = useState(Date.now());
 
   useEffect(() => {
     const activeQuizStr = localStorage.getItem("activeQuiz");
@@ -31,6 +34,9 @@ const QuizMode = () => {
           setMockQuiz(parsed.questions);
           if (parsed.title) {
             setQuizTitle(parsed.title);
+          }
+          if (parsed.documentId) {
+            setDocumentId(Number(parsed.documentId));
           }
           return;
         }
@@ -104,38 +110,80 @@ const QuizMode = () => {
 
     const score = Math.round((correctCount / mockQuiz.length) * 100);
 
+    const timeTakenMs = Date.now() - startTime;
+    const minutes = Math.floor(timeTakenMs / 60000);
+    const seconds = Math.floor((timeTakenMs % 60000) / 1000);
+    const timeString = minutes > 0 ? `${minutes} phút ${seconds} giây` : `${seconds} giây`;
+
     const quizResult = {
       score,
-      time: new Date().toLocaleTimeString("vi-VN", { minute: "2-digit", second: "2-digit" }),
+      time: timeString,
       correct: correctCount,
       total: mockQuiz.length,
-      aiRecommendations: [
-        {
-          id: 1,
-          title: `Chủ đề: ${quizTitle}`,
-          description: score >= 80 
-            ? `Tuyệt vời! Bạn đã nắm vững kiến thức với tỷ lệ trả lời đúng đạt ${score}%.` 
-            : `Bạn trả lời đúng ${correctCount}/${mockQuiz.length} câu hỏi. Hãy xem lại các câu trả lời sai bên dưới để ôn tập tốt hơn.`,
-          actionText: "Vào chế độ học tập",
-          actionLink: "/study"
-        }
-      ],
-      questions: questionsResult
+      aiRecommendations: [], // Sẽ được sinh động từ AI ở trang kết quả
+      questions: questionsResult,
+      quizTitle: quizTitle
     };
 
     localStorage.setItem("activeQuizResult", JSON.stringify(quizResult));
 
-    // Cập nhật điểm số trong lịch sử của quiz này
-    const quizHistory = JSON.parse(localStorage.getItem("quizHistory") || "[]");
-    if (quizHistory.length > 0) {
-      // Giả sử quiz vừa làm là phần tử đầu tiên
-      quizHistory[0].score = `${score}%`;
-      localStorage.setItem("quizHistory", JSON.stringify(quizHistory));
+    // Cập nhật điểm số và thông tin câu hỏi trong lịch sử của quiz này
+    const userId = getCurrentUserId();
+    const historyKey = userId ? `quizHistory_${userId}` : "quizHistory";
+    const quizHistory = JSON.parse(localStorage.getItem(historyKey) || "[]");
+    const activeQuizStr = localStorage.getItem("activeQuiz");
+    let targetHistoryId: number | null = null;
+    let quizDifficulty = "Medium";
+
+    if (activeQuizStr) {
+      try {
+        const parsed = JSON.parse(activeQuizStr);
+        if (parsed.historyId) {
+          targetHistoryId = parsed.historyId;
+        }
+        if (parsed.difficulty) {
+          quizDifficulty = parsed.difficulty;
+        }
+      } catch (e) {
+        console.error("Lỗi parse activeQuiz:", e);
+      }
     }
+
+    // Nếu không tìm thấy historyId cụ thể, dùng ID đầu tiên làm fallback
+    if (!targetHistoryId && quizHistory.length > 0) {
+      targetHistoryId = quizHistory[0].id;
+    }
+
+    const updatedHistory = quizHistory.map((item: any) => {
+      if (item.id === targetHistoryId) {
+        return {
+          ...item,
+          score: `${score}%`,
+          date: new Date().toISOString(),
+          questions: mockQuiz.map((q) => {
+            const userAnswerIdx = answers[q.id];
+            return {
+              id: q.id,
+              q: q.question,
+              options: q.options,
+              yourAnswer: userAnswerIdx !== undefined ? q.options[userAnswerIdx] : "Không trả lời",
+              correctAnswer: q.options[q.correctAnswer],
+              isCorrect: userAnswerIdx === q.correctAnswer,
+              explanation: q.explanation || "Giải thích cho câu hỏi này."
+            };
+          })
+        };
+      }
+      return item;
+    });
+    localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
 
     // Call API to save to database
     try {
-      await saveQuizResult(quizTitle, "Medium", mockQuiz.length, score);
+      // Map difficulty sang đúng định dạng chữ hoa đầu dòng hoặc chuẩn của DB
+      const formattedDiff = quizDifficulty.charAt(0).toUpperCase() + quizDifficulty.slice(1);
+      // Save the original mockQuiz (with options) so retaking old quizzes works correctly
+      await saveQuizResult(quizTitle, formattedDiff, mockQuiz.length, score, mockQuiz);
     } catch (err) {
       console.error("Lỗi khi lưu quiz result lên server:", err);
     }
@@ -194,7 +242,7 @@ const QuizMode = () => {
       </div>
 
       {/* Chatbot Area */}
-      {isChatOpen && <ChatBox setIsChatOpen={setIsChatOpen} />}
+      {isChatOpen && <ChatBox setIsChatOpen={setIsChatOpen} documentId={documentId} />}
     </div>
   );
 };

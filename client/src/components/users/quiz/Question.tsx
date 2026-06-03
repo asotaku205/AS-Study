@@ -31,6 +31,13 @@ const Question: React.FC<QuestionProps> = ({
 
   const currentQ = mockQuiz[currentQuestionIdx];
   if (!currentQ) return null;
+  if (!Array.isArray(currentQ.options)) {
+    return (
+      <div className="p-8 text-center text-slate-500 dark:text-slate-400 font-medium">
+        Dữ liệu câu hỏi này không có đáp án. Vui lòng tạo quiz mới.
+      </div>
+    );
+  }
 
   const handleToggleHint = () => {
     setShowHint((prev) => ({ ...prev, [currentQ.id]: !prev[currentQ.id] }));

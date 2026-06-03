@@ -11,20 +11,26 @@ export class QuizzController {
 
   @UseGuards(JwtAuthGuard)
   @Post('save-result')
-  async saveResult(@Req() req, @Body() body: { topic: string; difficulty: string; questionCount: number; score: number | null }) {
-    return await this.quizzService.saveResult(req.user.id, body.topic, body.difficulty, body.questionCount, body.score);
+  async saveResult(@Req() req, @Body() body: { topic: string; difficulty: string; questionCount: number; score: number | null; questions?: any }) {
+    return await this.quizzService.saveResult(req.user.userId, body.topic, body.difficulty, body.questionCount, body.score, body.questions);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('my-quizzes')
+  async getMyQuizzes(@Req() req) {
+    return await this.quizzService.getMyQuizzes(req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('my-stats')
   async getMyStats(@Req() req) {
-    return await this.quizzService.getMyStats(req.user.id);
+    return await this.quizzService.getMyStats(req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('my-recent')
   async getMyRecentActivity(@Req() req) {
-    return await this.quizzService.getMyRecentActivity(req.user.id);
+    return await this.quizzService.getMyRecentActivity(req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

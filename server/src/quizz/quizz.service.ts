@@ -16,6 +16,7 @@ export class QuizzService {
     difficulty: string,
     questionCount: number,
     score: number | null,
+    questions?: any,
   ) {
     const quiz = this.quizzRepository.create({
       userId,
@@ -23,6 +24,7 @@ export class QuizzService {
       difficulty,
       questionCount,
       score,
+      questions,
     });
     return await this.quizzRepository.save(quiz);
   }
@@ -31,13 +33,39 @@ export class QuizzService {
     const quizzes = await this.quizzRepository.find({ where: { userId } });
     const totalQuizzes = quizzes.length;
     const scoredQuizzes = quizzes.filter((q) => q.score !== null);
+    
     const avgScore =
       scoredQuizzes.length > 0
         ? scoredQuizzes.reduce((sum, q) => sum + (q.score || 0), 0) /
           scoredQuizzes.length
         : 0;
 
-    return { totalQuizzes, avgScore };
+    const highScore =
+      scoredQuizzes.length > 0
+        ? Math.max(...scoredQuizzes.map((q) => q.score || 0))
+        : 0;
+
+    const difficultyDistribution = {
+      basic: quizzes.filter((q) => q.difficulty?.toLowerCase() === 'basic' || q.difficulty?.toLowerCase() === 'easy').length,
+      advanced: quizzes.filter((q) => q.difficulty?.toLowerCase() === 'advanced' || q.difficulty?.toLowerCase() === 'medium').length,
+      expert: quizzes.filter((q) => q.difficulty?.toLowerCase() === 'expert' || q.difficulty?.toLowerCase() === 'hard').length,
+    };
+
+    let totalQuestions = 0;
+    let totalCorrectAnswers = 0;
+    scoredQuizzes.forEach((q) => {
+      totalQuestions += q.questionCount || 0;
+      totalCorrectAnswers += Math.round(((q.score || 0) / 100) * (q.questionCount || 0));
+    });
+
+    return {
+      totalQuizzes,
+      avgScore: Math.round(avgScore),
+      highScore,
+      totalQuestions,
+      totalCorrectAnswers,
+      difficultyDistribution,
+    };
   }
 
   async getAdminStats() {
@@ -91,5 +119,10 @@ export class QuizzService {
       date: q.createdAt,
     }));
   }
- 
+  async getMyQuizzes(userId: number) {
+    return await this.quizzRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
 }

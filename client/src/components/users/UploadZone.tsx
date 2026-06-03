@@ -14,7 +14,7 @@ const UploadZone = ({ file, setFile }: { file: File | null; setFile: (file: File
                 type="file" 
                 className="hidden" 
                 onChange={(e) => e.target.files && setFile(e.target.files[0])}
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.jpg,.jpeg,.png,.webp"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,.mov,.avi,.mp3,.wav,.ogg,.m4a,.zip,.rar"
               />    
               <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8 text-slate-500 dark:text-slate-400" />
@@ -23,7 +23,7 @@ const UploadZone = ({ file, setFile }: { file: File | null; setFile: (file: File
                 Kéo thả file vào đây hoặc nhấn để chọn
               </h3>
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                Hỗ trợ PDF, DOCX, PPTX, TXT, MD, hình ảnh JPG, PNG, WEBP (Tối đa 50MB)
+                Hỗ trợ PDF, Office (Word, Excel, PowerPoint), Text, Markdown, Ảnh, Video, Audio, Archives (Tối đa 100MB)
               </p>
             </div>
           ) : (

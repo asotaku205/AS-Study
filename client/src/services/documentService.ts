@@ -55,16 +55,6 @@ export const downloadDocument = async (id: number) => {
   });
   return response.data;
 }
-export const getPreviewUrl = (id: number) => {
-  return `${import.meta.env.VITE_API_URL}/documents/${id}/preview`;
-};
-export const getPreviewDocument = async (id: number) => {
-  const response = await api.get(`/documents/${id}/preview`, {
-    responseType: "blob",
-  });
-
-  return response.data;
-};
 export const runOcrForDocument = async (id: number): Promise<Document> => {
   const response = await api.post(`/documents/${id}/ocr`);
   return response.data;

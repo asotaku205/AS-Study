@@ -19,7 +19,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from 'express';
 import Tesseract from 'tesseract.js';
-import { PDFParse } from 'pdf-parse';
+import * as pdf from 'pdf-parse';
 import * as mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 
@@ -202,22 +202,6 @@ export class DocumentsService {
     }
     return res.download(filePath, document.originalName);
   }
-  async previewDocument(id: number, res: Response): Promise<StreamableFile> {
-    const document = await this.findOne(id);
-
-    const filePath = path.join(process.cwd(), document.fileUrl);
-
-    if (!fs.existsSync(filePath)) {
-      throw new NotFoundException('File tài liệu không tồn tại trên server');
-    }
-    const fileStream = fs.createReadStream(filePath);
-    res.set({
-      'Content-Type': document.mimeType,
-      'Content-Disposition': `inline; filename="${document.originalName}"`,
-    });
-    return new StreamableFile(fileStream);
-  }
-
   async runOcr(id: number): Promise<DocumentResponseDto> {
     const document = await this.findOne(id);
 
@@ -265,8 +249,8 @@ export class DocumentsService {
       } else if (isPdf) {
         // PDF → thử đọc text layer trước
         const dataBuffer = fs.readFileSync(filePath);
-        const parser = new PDFParse({ data: dataBuffer });
-        const parsedData = await parser.getText();
+        const pdfParser = typeof pdf === 'function' ? pdf : (pdf as any).default;
+        const parsedData = await pdfParser(dataBuffer);
         const directText = (parsedData.text || '').trim();
 
         if (directText.length > 50) {

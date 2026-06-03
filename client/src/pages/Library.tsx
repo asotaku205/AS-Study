@@ -112,16 +112,11 @@ const Library = () => {
           </p>
         </header>
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <StatsCard
             icon={<FileText className="w-5 h-5" />}
             title="Tài liệu"
             value={String(docs?.length || 0)}
-          />
-          <StatsCard
-            icon={<Sparkles className="w-5 h-5" />}
-            title="Quiz đã tạo"
-            value={String(quizStats.totalQuizzes || 0)}
           />
           <StatsCard
             icon={<User className="w-5 h-5" />}

@@ -17,6 +17,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 import { MailModule } from './mail/mail.module';
 import { QuizzModule } from './quizz/quizz.module';
+import { LecturesModule } from './lectures/lectures.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { QuizzModule } from './quizz/quizz.module';
     ChatModule,
     MailModule,
     QuizzModule,
+    LecturesModule,
   ],
   controllers: [AppController],
   providers: [

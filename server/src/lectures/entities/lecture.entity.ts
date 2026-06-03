@@ -10,7 +10,7 @@ import {
 import { User } from '../../users/entity/user.entity';
 
 @Entity()
-export class Quizz {
+export class Lecture {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -18,19 +18,10 @@ export class Quizz {
   userId: number;
 
   @Column({ length: 255 })
-  topic: string;
+  title: string;
 
-  @Column({ length: 50 })
-  difficulty: string;
-
-  @Column({ type: 'int', default: 10 })
-  questionCount: number;
-
-  @Column({ type: 'int', nullable: true })
-  score: number | null;
-
-  @Column({ type: 'json', nullable: true })
-  questions: any;
+  @Column({ type: 'text' })
+  content: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -38,7 +29,7 @@ export class Quizz {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => User, (user) => user.quizzes, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 }
