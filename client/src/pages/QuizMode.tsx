@@ -3,7 +3,7 @@ import Question from "../components/users/quiz/Question";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ChatBox from "../components/users/ChatBox";
-
+import { saveQuizResult } from "../services/quizzService";
 type QuizQuestion = {
   id: number;
   question: string;
@@ -81,7 +81,7 @@ const QuizMode = () => {
     setAnswers((prev) => ({ ...prev, [questionId]: optionIdx }));
   };
 
-  const handleSubmitQuiz = () => {
+  const handleSubmitQuiz = async () => {
     if (mockQuiz.length === 0) return;
 
     let correctCount = 0;
@@ -131,6 +131,13 @@ const QuizMode = () => {
       // Giả sử quiz vừa làm là phần tử đầu tiên
       quizHistory[0].score = `${score}%`;
       localStorage.setItem("quizHistory", JSON.stringify(quizHistory));
+    }
+
+    // Call API to save to database
+    try {
+      await saveQuizResult(quizTitle, "Medium", mockQuiz.length, score);
+    } catch (err) {
+      console.error("Lỗi khi lưu quiz result lên server:", err);
     }
 
     navigate("/quiz-result");

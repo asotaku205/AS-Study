@@ -16,6 +16,7 @@ import { ChatModule } from './chat/chat.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 import { MailModule } from './mail/mail.module';
+import { QuizzModule } from './quizz/quizz.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { MailModule } from './mail/mail.module';
     CategoriesModule,
     ChatModule,
     MailModule,
+    QuizzModule,
   ],
   controllers: [AppController],
   providers: [

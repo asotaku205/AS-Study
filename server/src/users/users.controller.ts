@@ -12,7 +12,9 @@ import {
   Post,
   Put,
   Query,
+  Req,
   Request,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -21,6 +23,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Roles } from '../decorators/roles';
 import { Public } from '../decorators/public';
 import { UserResponseDto } from './dto/user-response.dto';
+import { JwtAuthGuard } from '../auth/passport/jwt-auth.guard';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -33,6 +36,14 @@ export class UsersController {
   ): Promise<UserResponseDto> {
     return this.usersService.createUser(createUserDto);
   }
+
+  @Roles(UserRole.Admin)
+  @Get('stats/registration-growth')
+  @HttpCode(HttpStatus.OK)
+  async getUserRegistrationGrowth() {
+    return this.usersService.getUserRegistrationGrowth();
+  }
+
   @Patch(':id/ban')
   @Roles(UserRole.Admin)
   async banUser(@Param('id', ParseIntPipe) id: number, @Request() req) {
@@ -73,6 +84,13 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.usersService.deleteUser(id);
+  }
+  @Get("chart")
+  @UseGuards(JwtAuthGuard)
+  getChart(@Req() req) {
+    return this.usersService.getChart(
+      req.user.userId,
+    );
   }
 
   @Roles(UserRole.Admin)

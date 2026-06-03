@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Document } from '../../documents/entities/document.entity';
+import { Quizz } from '../../quizz/entities/quizz.entity';
 export enum UserRole {
   User = "user",
   Admin = "admin",
@@ -54,5 +55,8 @@ export class User {
   updatedAt: Date;
   @OneToMany(() => Document, (document) => document.ownerUserId)
   documents: Document[];
+
+  @OneToMany(() => Quizz, (quizz) => quizz.user)
+  quizzes: Quizz[];
 }
   

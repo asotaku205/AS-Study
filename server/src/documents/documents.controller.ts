@@ -115,6 +115,20 @@ export class DocumentsController {
   async findFeaturedDocuments() {
     return await this.documentsService.getFeaturedDocuments();
   }
+
+  @Get('count/mine')
+  @UseGuards(JwtAuthGuard)
+  async countMine(@Request() req) {
+    const count = await this.documentsService.countByUserId(req.user.userId);
+    return { count };
+  }
+
+  @Get('stats/by-category')
+  async getDocsByCategory() {
+    return await this.documentsService.getDocsByCategory();
+  }
+
+
   @Patch(':id/visibility')
   async changeVisibility(
     @Param('id', ParseIntPipe) id: number,

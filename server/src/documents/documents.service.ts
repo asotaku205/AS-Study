@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
   StreamableFile,
-  
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { UploadDocumentDto } from './dto/upload-document.dto';
@@ -41,11 +40,17 @@ export class DocumentsService {
 
     let categoryId = dto.categoryId;
     if (categoryId) {
-      const categoryExists = await this.documentsRepository.manager.findOne('Category', {
-        where: { id: categoryId },
-      });
+      const categoryExists = await this.documentsRepository.manager.findOne(
+        'Category',
+        {
+          where: { id: categoryId },
+        },
+      );
       if (!categoryExists) {
-        const firstCategory = await this.documentsRepository.manager.findOne('Category', {});
+        const firstCategory = await this.documentsRepository.manager.findOne(
+          'Category',
+          {},
+        );
         categoryId = firstCategory ? (firstCategory as any).id : null;
       }
     }
@@ -174,7 +179,10 @@ export class DocumentsService {
       take: 3,
     });
   }
-  async incrementViewCount(id: number, visibility: DocumentVisibility): Promise<void> {
+  async incrementViewCount(
+    id: number,
+    visibility: DocumentVisibility,
+  ): Promise<void> {
     if (visibility === DocumentVisibility.Public) {
       await this.documentsRepository.increment({ id }, 'viewCount', 1);
     }
@@ -183,7 +191,9 @@ export class DocumentsService {
     const document = await this.findOne(id);
 
     if (document.visibility === DocumentVisibility.Private) {
-      throw new BadRequestException('Tài liệu này là riêng tư và không thể tải xuống');
+      throw new BadRequestException(
+        'Tài liệu này là riêng tư và không thể tải xuống',
+      );
     }
     const filePath = path.join(process.cwd(), document.fileUrl);
 
@@ -214,16 +224,30 @@ export class DocumentsService {
     const mime = document.mimeType;
     const name = document.originalName;
 
-    const isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(name);
-    const isPdf   = mime === 'application/pdf' || /\.pdf$/i.test(name);
-    const isDocx  = mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || /\.docx$/i.test(name);
-    const isDoc   = mime === 'application/msword' || /\.doc$/i.test(name);
-    const isTxt   = mime === 'text/plain' || mime === 'text/markdown' || mime === 'text/x-markdown' || /\.(txt|md|csv)$/i.test(name);
-    const isXlsx  = mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || mime === 'application/vnd.ms-excel' || /\.(xlsx|xls)$/i.test(name);
+    const isImage =
+      mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(name);
+    const isPdf = mime === 'application/pdf' || /\.pdf$/i.test(name);
+    const isDocx =
+      mime ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      /\.docx$/i.test(name);
+    const isDoc = mime === 'application/msword' || /\.doc$/i.test(name);
+    const isTxt =
+      mime === 'text/plain' ||
+      mime === 'text/markdown' ||
+      mime === 'text/x-markdown' ||
+      /\.(txt|md|csv)$/i.test(name);
+    const isXlsx =
+      mime ===
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      mime === 'application/vnd.ms-excel' ||
+      /\.(xlsx|xls)$/i.test(name);
 
     const supported = isImage || isPdf || isDocx || isDoc || isTxt || isXlsx;
     if (!supported) {
-      throw new BadRequestException('Định dạng file không được hỗ trợ trích xuất văn bản');
+      throw new BadRequestException(
+        'Định dạng file không được hỗ trợ trích xuất văn bản',
+      );
     }
 
     const filePath = path.join(process.cwd(), document.fileUrl);
@@ -238,7 +262,6 @@ export class DocumentsService {
         // Ảnh → luôn dùng OCR
         const result = await Tesseract.recognize(filePath, 'eng+vie');
         text = result.data.text;
-
       } else if (isPdf) {
         // PDF → thử đọc text layer trước
         const dataBuffer = fs.readFileSync(filePath);
@@ -254,21 +277,18 @@ export class DocumentsService {
           const result = await Tesseract.recognize(filePath, 'eng+vie');
           text = result.data.text;
         }
-
       } else if (isDocx || isDoc) {
         // DOCX/DOC → dùng mammoth
         const result = await mammoth.extractRawText({ path: filePath });
         text = result.value;
-
       } else if (isTxt) {
         // TXT/MD/CSV → đọc trực tiếp
         text = fs.readFileSync(filePath, 'utf-8');
-
       } else if (isXlsx) {
         // XLSX/XLS → dùng xlsx
         const workbook = XLSX.readFile(filePath);
         const lines: string[] = [];
-        workbook.SheetNames.forEach(sheetName => {
+        workbook.SheetNames.forEach((sheetName) => {
           const sheet = workbook.Sheets[sheetName];
           lines.push(`=== ${sheetName} ===`);
           lines.push(XLSX.utils.sheet_to_csv(sheet));
@@ -284,8 +304,36 @@ export class DocumentsService {
         excludeExtraneousValues: true,
       });
     } catch (error) {
-      console.error('Error during text extraction:', error);
-      throw new BadRequestException('Không thể trích xuất văn bản từ tệp này: ' + error.message);
+      console.error(error);
+
+      if (error instanceof Error) {
+        throw new BadRequestException({
+          message: 'Không thể trích xuất văn bản',
+          detail: error.message,
+        });
+      }
+
+      throw new BadRequestException('Không thể trích xuất văn bản từ tệp này');
     }
+  }
+
+  async countByUserId(userId: number): Promise<number> {
+    return await this.documentsRepository.count({
+      where: { ownerUserId: userId },
+    });
+  }
+
+  async getDocsByCategory(): Promise<{ name: string; value: number }[]> {
+    const results = await this.documentsRepository
+      .createQueryBuilder('doc')
+      .leftJoin('doc.category', 'cat')
+      .select('cat.name', 'name')
+      .addSelect('COUNT(doc.id)', 'value')
+      .groupBy('cat.name')
+      .getRawMany();
+    return results.map((r) => ({
+      name: r.name || 'Chưa phân loại',
+      value: parseInt(r.value),
+    }));
   }
 }
