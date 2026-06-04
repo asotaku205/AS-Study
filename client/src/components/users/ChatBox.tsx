@@ -1,6 +1,7 @@
 import { Bot, User, Send, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { chatWithAIStream } from "../../services/chatService";
 
 type ChatBoxProps = {
@@ -130,7 +131,7 @@ const ChatBox = ({ setIsChatOpen, documentId }: ChatBoxProps) => {
                 {msg.role === 'user' ? (
                   msg.content
                 ) : (
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                 )}
               </div>
             </div>

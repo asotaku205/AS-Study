@@ -105,7 +105,9 @@ export class DocumentsController {
   @Get()
   @Public()
   findAll() {
-    return this.documentsService.findAll();
+    return this.documentsService.findAll(
+
+    );
   }
   @Get('public')
   @Public()

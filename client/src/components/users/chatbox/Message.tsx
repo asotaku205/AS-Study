@@ -1,6 +1,7 @@
 import { Bot, User } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { ChatMessage } from "../../../services/chatService";
 
 interface MessageProps {
@@ -60,7 +61,7 @@ const Message: React.FC<MessageProps> = ({ messages, isLoading }) => {
                 {msg.role === "user" ? (
                   msg.content
                 ) : msg.content ? (
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                 ) : (
                   <div className="flex items-center gap-1.5 py-1">
                     <span className="w-1.5 h-1.5 bg-blue-900 dark:bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>

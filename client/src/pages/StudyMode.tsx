@@ -2,6 +2,7 @@ import { ArrowLeft, BookOpen, MessageSquare, PenTool, Sparkles, Target, Zap } fr
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import ChatBox from "../components/users/ChatBox";
 
 const StudyMode = () => {
@@ -71,7 +72,7 @@ const StudyMode = () => {
           <div className="max-w-3xl mx-auto">
             <article className="prose prose-slate dark:prose-invert prose-lg prose-headings:font-black prose-headings:tracking-tight max-w-none prose-p:my-4 prose-ul:my-4 prose-ol:my-4 prose-li:my-1 prose-headings:my-6 prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-code:bg-blue-50 dark:prose-code:bg-blue-950/40 prose-code:px-1 prose-code:rounded prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:rounded-xl">
               {lectureContent ? (
-                <ReactMarkdown>{lectureContent}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{lectureContent}</ReactMarkdown>
               ) : (
                 <>
                   <p className="text-slate-700 dark:text-slate-300 font-medium text-xl leading-relaxed mb-10 border-l-4 border-slate-900 dark:border-white pl-6 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-r-xl">

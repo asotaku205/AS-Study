@@ -88,7 +88,7 @@ export class DocumentsService {
     });
   }
   findAll() {
-    return this.documentsRepository.find({ relations: ['owner'] });
+    return this.documentsRepository.find({ relations: ['owner'] , order: { createdAt: 'DESC' }});
   }
 
   async findOne(id: number): Promise<Document> {
