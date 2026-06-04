@@ -20,7 +20,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
             database: configService.get<string>('DB_NAME'),
             entities: [__dirname + '/../**/*.entity{.ts,.js}'],
             synchronize: configService.get<string>('NODE_ENV') === 'development',
-            logging: configService.get<string>('NODE_ENV') === 'development',
+            logging: ['error'], // Chỉ hiển thị log khi có lỗi database, ẩn các câu SELECT/INSERT/UPDATE để tránh rối terminal
         }),
     })
 ],
