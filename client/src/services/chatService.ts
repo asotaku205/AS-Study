@@ -24,7 +24,8 @@ export const chatWithAIStream = async (
   history: ChatMessage[] | undefined,
   onChunk: (text: string) => void,
   onDone: () => void,
-  onError: (err: any) => void
+  onError: (err: any) => void,
+  documentIds?: number[]
 ): Promise<void> => {
   try {
     const token = getAccessToken();
@@ -38,7 +39,7 @@ export const chatWithAIStream = async (
     let response = await fetch(`${import.meta.env.VITE_API_URL}/chat/stream`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ message, documentId, history }),
+      body: JSON.stringify({ message, documentId, history, documentIds }),
     });
 
     if (response.status === 401) {
@@ -50,7 +51,7 @@ export const chatWithAIStream = async (
           response = await fetch(`${import.meta.env.VITE_API_URL}/chat/stream`, {
             method: "POST",
             headers,
-            body: JSON.stringify({ message, documentId, history }),
+            body: JSON.stringify({ message, documentId, history, documentIds }),
           });
         }
       } catch (refreshErr) {

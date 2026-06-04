@@ -1,55 +1,82 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Bot } from "lucide-react";
 import Message from "../components/users/chatbox/Message";
 import Input from "../components/users/chatbox/Input";
-import HistoryChat from "../components/users/chatbox/HistoryChat";
 import { chatWithAIStream } from "../services/chatService";
 import type { ChatMessage } from "../services/chatService";
-import { getMyDocuments } from "../services/documentService";
-import type { Document } from "../types/documentTypes";
+import { getUserProfile } from "../services/userService";
+import { uploadDocument, runOcrForDocument } from "../services/documentService";
+import { toast } from "react-toastify";
 
 const ChatAI = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "ai",
       content:
-        "Xin chào! Tôi là Trợ lý AI Scholarly. Bạn có thể hỏi tôi bất kỳ câu hỏi nào, hoặc chọn một tài liệu ở cột bên trái để tôi hỗ trợ học tập dựa trên nội dung tài liệu đó nhé!",
+        "Xin chào! Tôi là Trợ lý AI Scholarly. Bạn có thể hỏi tôi bất kỳ câu hỏi nào, hoặc đính kèm các tài liệu học tập vào khung chat để tôi hỗ trợ học tập dựa trên nội dung tài liệu đó nhé!",
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDocId, setSelectedDocId] = useState<number | undefined>(undefined);
-  const [selectedDocTitle, setSelectedDocTitle] = useState<string | null>(null);
-  const [documents, setDocuments] = useState<Document[]>([]);
 
-  useEffect(() => {
-    const fetchDocs = async () => {
-      try {
-        const data = await getMyDocuments();
-        setDocuments(data);
-      } catch (error) {
-        console.error("Lỗi khi tải tài liệu:", error);
-      }
-    };
-    fetchDocs();
-  }, []);
+  const handleSendMessage = async (text: string, files: File[]) => {
+    if (!text.trim() && files.length === 0) return;
 
-  const handleSendMessage = async (text: string) => {
-    if (!text.trim()) return;
-
-    const userMsg: ChatMessage = { role: "user", content: text };
-    const updatedMessages = [...messages, userMsg];
-    
-    // Thêm tin nhắn user và một khung tin nhắn AI rỗng để hứng dữ liệu stream
-    setMessages([...updatedMessages, { role: "ai", content: "" }]);
     setIsLoading(true);
+    let documentIds: number[] = [];
+
+    if (files.length > 0) {
+      try {
+        toast.info("Đang xử lý tài liệu đính kèm...");
+        const profile = await getUserProfile();
+        const ownerUserId = profile.id;
+
+        for (const file of files) {
+          toast.info(`Đang tải lên tệp: ${file.name}...`);
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("title", file.name);
+          formData.append("description", "Tài liệu tải lên trực tiếp trong hội thoại chat");
+          formData.append("ownerUserId", String(ownerUserId));
+          formData.append("categoryId", "1"); // Mặc định categoryId là 1
+          formData.append("visibility", "private"); // Luôn là private
+
+          const uploadedDoc = await uploadDocument(formData);
+
+          toast.info(`Đang trích xuất chữ (OCR) cho tệp: ${file.name}...`);
+          const ocrResult = await runOcrForDocument(uploadedDoc.id);
+          
+          if (ocrResult && ocrResult.id) {
+            documentIds.push(ocrResult.id);
+          }
+        }
+        toast.success("Xử lý tài liệu thành công!");
+      } catch (error: any) {
+        console.error("Lỗi khi tải lên/xử lý tài liệu:", error);
+        toast.error("Không thể xử lý một hoặc nhiều tài liệu đính kèm.");
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Tạo hiển thị tin nhắn user
+    let displayContent = text;
+    if (files.length > 0) {
+      const fileListStr = files.map(f => `📄 ${f.name}`).join(", ");
+      displayContent = `${text}\n\n*(Đã đính kèm tài liệu: ${fileListStr})*`;
+    }
+
+    const userMsg: ChatMessage = { role: "user", content: displayContent };
+    const updatedMessages = [...messages, userMsg];
+
+    setMessages([...updatedMessages, { role: "ai", content: "" }]);
 
     try {
       const limitedHistory = updatedMessages.slice(-20);
       let aiResponse = "";
-      
+
       await chatWithAIStream(
         text,
-        selectedDocId,
+        undefined, // documentId
         limitedHistory,
         (chunk) => {
           setIsLoading(false); // Khi có chunk đầu tiên, tắt trạng thái loading dots
@@ -81,7 +108,8 @@ const ChatAI = () => {
             }
             return next;
           });
-        }
+        },
+        documentIds
       );
     } catch (error: any) {
       console.error(error);
@@ -94,36 +122,8 @@ const ChatAI = () => {
     }
   };
 
-  const handleSelectDocument = (docId: number | undefined, docTitle: string | null) => {
-    setSelectedDocId(docId);
-    setSelectedDocTitle(docTitle);
-
-    if (docId) {
-      setMessages([
-        {
-          role: "ai",
-          content: `Tôi đã sẵn sàng hỗ trợ bạn học tập với tài liệu: "${docTitle}". Bạn có thể yêu cầu tôi tóm tắt tài liệu, giải thích các khái niệm hoặc đặt câu hỏi ôn tập dựa trên tài liệu này!`,
-        },
-      ]);
-    } else {
-      setMessages([
-        {
-          role: "ai",
-          content: "Tôi đã chuyển sang chế độ trò chuyện tự do. Bạn có thể đặt bất kỳ câu hỏi kiến thức chung nào!",
-        },
-      ]);
-    }
-  };
-
   return (
     <div className="flex h-[calc(100vh-8rem)] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      {/* Sidebar - History / Document selection */}
-      <HistoryChat
-        documents={documents}
-        selectedDocId={selectedDocId}
-        onSelectDocument={handleSelectDocument}
-      />
-
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative bg-white dark:bg-slate-900">
         {/* Chat Header */}
@@ -132,11 +132,6 @@ const ChatAI = () => {
             <Bot className="w-5 h-5 text-blue-900 dark:text-blue-400" />
             <div>
               <span>Trợ lý AI</span>
-              {selectedDocTitle && (
-                <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full inline-block max-w-[150px] md:max-w-[300px] truncate align-middle">
-                   {selectedDocTitle}
-                </span>
-              )}
             </div>
           </div>
         </div>

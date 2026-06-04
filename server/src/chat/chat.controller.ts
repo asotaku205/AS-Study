@@ -10,9 +10,10 @@ export class ChatController {
   async generateResponse(
     @Body('message') message: string,
     @Body('documentId') documentId?: number,
+    @Body('documentIds') documentIds?: number[],
     @Body('history') history?: { role: 'user' | 'ai'; content: string }[],
   ) {
-    const reply = await this.chatService.generateResponse(message, documentId, history);
+    const reply = await this.chatService.generateResponse(message, documentId, documentIds, history);
     return { reply };
   }
 
@@ -21,9 +22,10 @@ export class ChatController {
     @Res() res: Response,
     @Body('message') message: string,
     @Body('documentId') documentId?: number,
+    @Body('documentIds') documentIds?: number[],
     @Body('history') history?: { role: 'user' | 'ai'; content: string }[],
   ) {
-    await this.chatService.streamResponse(message, documentId, history, res);
+    await this.chatService.streamResponse(message, documentId, documentIds, history, res);
   }
 
   @Post('generate-quiz')

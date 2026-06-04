@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Document } from '../documents/entities/document.entity';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Response } from 'express';
@@ -37,16 +37,32 @@ export class ChatService {
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
-  private async prepareContext(documentId?: number): Promise<string> {
-    if (!documentId) return '';
-    const document = await this.documentsRepository.findOne({
-      where: { id: documentId },
-      select: ['id', 'ocrText'],
+  private async prepareContext(documentId?: number, documentIds?: number[]): Promise<string> {
+    const ids: number[] = [];
+    if (documentId) ids.push(documentId);
+    if (documentIds && Array.isArray(documentIds)) {
+      documentIds.forEach(id => {
+        if (id && !ids.includes(id)) ids.push(id);
+      });
+    }
+    if (ids.length === 0) return '';
+
+    const documents = await this.documentsRepository.find({
+      where: { id: In(ids) },
+      select: ['id', 'ocrText', 'title'],
     });
-    if (!document) throw new NotFoundException('Không tìm thấy tài liệu được yêu cầu');
-    const text = document.ocrText || '';
-    if (!text.trim()) throw new BadRequestException('Tài liệu này chưa được trích xuất chữ (OCR). Hãy chạy trích xuất chữ trước khi chat!');
-    return text;
+
+    if (documents.length === 0) throw new NotFoundException('Không tìm thấy tài liệu được yêu cầu');
+
+    let combinedText = '';
+    for (const doc of documents) {
+      const text = doc.ocrText || '';
+      if (!text.trim()) {
+        throw new BadRequestException(`Tài liệu "${doc.title}" chưa được trích xuất chữ (OCR). Hãy chạy trích xuất chữ trước khi chat!`);
+      }
+      combinedText += `=== Nội dung tài liệu: ${doc.title} ===\n${text}\n\n`;
+    }
+    return combinedText.trim();
   }
 
   private buildHistory(history?: { role: 'user' | 'ai'; content: string }[]): ChatHistoryItem[] {
@@ -90,11 +106,12 @@ export class ChatService {
   async generateResponse(
     message: string,
     documentId?: number,
+    documentIds?: number[],
     history?: { role: 'user' | 'ai'; content: string }[],
   ): Promise<string> {
     if (!message) throw new BadRequestException('Tin nhắn không được để trống');
 
-    const contextText = await this.prepareContext(documentId);
+    const contextText = await this.prepareContext(documentId, documentIds);
     if (!this.ai) return this.getMockResponse(message, contextText);
 
     const geminiHistory = this.buildHistory(history);
@@ -138,6 +155,7 @@ export class ChatService {
   async streamResponse(
     message: string,
     documentId: number | undefined,
+    documentIds: number[] | undefined,
     history: { role: 'user' | 'ai'; content: string }[] | undefined,
     res: Response,
   ): Promise<void> {
@@ -154,7 +172,7 @@ export class ChatService {
 
     let contextText = '';
     try {
-      contextText = await this.prepareContext(documentId);
+      contextText = await this.prepareContext(documentId, documentIds);
     } catch (e: any) {
       send({ error: e.message });
       return done();
