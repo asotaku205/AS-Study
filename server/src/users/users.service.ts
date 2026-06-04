@@ -14,12 +14,18 @@ import { createHmac } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { UserResponseDto } from './dto/user-response.dto';
 import { plainToInstance } from 'class-transformer';
+import { Document } from '../documents/entities/document.entity';
+import { Quizz } from '../quizz/entities/quizz.entity';
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private configService: ConfigService,
+    @InjectRepository(Quizz)
+    private quizRepository: Repository<Quizz>,
+    @InjectRepository(Document)
+    private documentRepository: Repository<Document>,
   ) {}
   // Tạo người dùng mới
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -311,5 +317,87 @@ export class UsersService {
     user.isBanned = false;
     const updatedUser = await this.usersRepository.save(user);
     return this.toUserResponse(updatedUser);
+  }
+
+  async getUserRegistrationGrowth(): Promise<{ name: string; users: number }[]> {
+    const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const result: { name: string; users: number }[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+      const count = await this.usersRepository
+        .createQueryBuilder('user')
+        .where('user.createdAt >= :dayStart AND user.createdAt < :dayEnd', { dayStart, dayEnd })
+        .getCount();
+      result.push({ name: days[date.getDay()], users: count });
+    }
+    return result;
+  }
+   async getChart(userId: number) {
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - 6);
+    startDate.setHours(0, 0, 0, 0);
+
+    const docs = await this.documentRepository
+      .createQueryBuilder("document")
+      .select("TO_CHAR(document.createdAt, 'YYYY-MM-DD')", "date")
+      .addSelect("COUNT(*)", "count")
+      .where("document.ownerUserId = :userId", { userId })
+      .andWhere("document.createdAt >= :startDate", {
+        startDate,
+      })
+      .groupBy("TO_CHAR(document.createdAt, 'YYYY-MM-DD')")
+      .getRawMany();
+
+    const quizzes = await this.quizRepository
+      .createQueryBuilder("quiz")
+      .select("TO_CHAR(quiz.createdAt, 'YYYY-MM-DD')", "date")
+      .addSelect("COUNT(*)", "count")
+      .where("quiz.userId = :userId", { userId })
+      .andWhere("quiz.createdAt >= :startDate", {
+        startDate,
+      })
+      .groupBy("TO_CHAR(quiz.createdAt, 'YYYY-MM-DD')")
+      .getRawMany();
+
+    const formatDate = (val: any) => {
+      if (!val) return '';
+      if (val instanceof Date) return val.toISOString().split('T')[0];
+      const str = String(val);
+      if (str.includes(' ')) return str.split(' ')[0];
+      if (str.includes('T')) return str.split('T')[0];
+      return str;
+    };
+
+    const docsMap = new Map(
+      docs.map((d) => [formatDate(d.date), Number(d.count)]),
+    );
+
+    const quizMap = new Map(
+      quizzes.map((q) => [formatDate(q.date), Number(q.count)]),
+    );
+
+    const result: { date: string; docs: number; quizz: number }[] = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const day = new Date();
+
+      day.setDate(today.getDate() - i);
+
+      const key = day.toISOString().split("T")[0];
+
+      result.push({
+        date: key,
+        docs: docsMap.get(key) || 0,
+        quizz: quizMap.get(key) || 0,
+      });
+    }
+
+    return result;
   }
 }

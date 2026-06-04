@@ -23,6 +23,7 @@ import useGetUser from "../hooks/useGetUser";
 import { getFeaturedDocuments, getPublicDocuments } from "../services/documentService";
 import type { Document } from "../types/documentTypes";
 import AppPagination from "../components/Pagination";
+import { getAdminQuizStats } from "../services/quizzService";
 
 const Library = () => {
   const [activeSort, setActiveSort] = useState(false);
@@ -31,8 +32,32 @@ const Library = () => {
   const [docs, setDocs] = useState<Document[]>([]);
   const [feaDocs, setFeaDocs] = useState<Document[]>([]);
   const [page, setPage] = useState(1);
-  const ITEMS_PER_PAGE = 6;
+  const [quizStats, setQuizStats] = useState({ totalQuizzes: 0, weeklyQuizzesCount: 0, growth: 0 });
 
+  const ITEMS_PER_PAGE = 6;
+ useEffect(() => {
+    let isMounted = true;
+
+    const loadStats = async () => {
+      try {
+        const [quizData] = await Promise.all([
+          getAdminQuizStats(),
+          
+        ]);
+        if (isMounted) {
+          setQuizStats(quizData);
+        }
+      } catch (err) {
+        console.error("Lỗi khi load stats", err);
+      }
+    };
+
+    loadStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   useEffect(() => {
     const loadDocs = async () => {
       try {
@@ -87,16 +112,11 @@ const Library = () => {
           </p>
         </header>
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <StatsCard
             icon={<FileText className="w-5 h-5" />}
             title="Tài liệu"
             value={String(docs?.length || 0)}
-          />
-          <StatsCard
-            icon={<Sparkles className="w-5 h-5" />}
-            title="Quiz đã tạo"
-            value="2.225"
           />
           <StatsCard
             icon={<User className="w-5 h-5" />}

@@ -21,3 +21,11 @@ export const unbanUser = async (id: number) => {
     const res = await api.patch(`/users/${id}/unban`);
     return res.data;
 }
+export const getUserRegistrationGrowth = async () => {
+    const res = await api.get("/users/stats/registration-growth");
+    return res.data;
+}
+export const getDashboardChart = async () => {
+  const res = await api.get("/users/chart");
+  return res.data;
+};

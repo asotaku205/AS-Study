@@ -4,7 +4,6 @@ import {
   Calendar,
   User,
   FileText,
-  Eye,
   Sparkles,
   BookmarkPlus,
   Share2,
@@ -13,14 +12,15 @@ import {
   Copy,
   Check,
   RotateCw,
+  Eye,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Document } from "../types/documentTypes";
 import { downloadDocument, getDocumentById, runOcrForDocument } from "../services/documentService";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import useGetFileBadge from "../hooks/useGetFileBadge";
-import PreviewDocument from "../components/users/library/PreviewDocument";
 const DocsDetail = () => {
+  const navigate = useNavigate();
   const [doc, setDoc] = useState<Document>();
   const { id } = useParams<{ id: string }>();
   const numericId = Number(id);
@@ -118,15 +118,24 @@ const DocsDetail = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              {doc && (
+                <button
+                  onClick={() => handleDownload(doc.id, doc.originalName || "document")}
+                  className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  title="Tải xuống tài liệu"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+              )}
               <button
-                onClick={() => {}}
+                onClick={() => { }}
                 className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 title="Lưu tài liệu"
               >
                 <BookmarkPlus className="w-5 h-5" />
               </button>
               <button
-                onClick={() => {}}
+                onClick={() => { }}
                 className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 title="Chia sẻ"
               >
@@ -312,47 +321,22 @@ const DocsDetail = () => {
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row gap-4">
         <button
-          onClick={() => {}}
+          onClick={() => doc && navigate(`/create-lecture?docId=${doc.id}`)}
           className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-lg text-lg group"
         >
           <BookOpen className="w-6 h-6 group-hover:scale-110 transition-transform" />
           Bắt đầu Học với AI
         </button>
         <button
-          onClick={() => {}}
+          onClick={() => doc && navigate(`/create-quiz?docId=${doc.id}`)}
           className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm text-lg group"
         >
           <Zap className="w-6 h-6 text-amber-500 group-hover:scale-110 transition-transform" />
           Tạo Quiz tự động
         </button>
       </div>
-
-      {/* Preview Section */}
-      <div className="mt-12 pt-12 border-t border-slate-200 dark:border-slate-800">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-6">
-          <Eye className="w-5 h-5 text-slate-500" />
-          Xem trước nội dung
-        </h2>
-        <div className="min-h-[500px] bg-slate-100 dark:bg-slate-800/50 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner">
-          <div className="w-full h-full">
-            {doc && <PreviewDocument doc={doc} />}{" "}
-            <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center"  >
- <button
-              onClick={() => {
-                if (!doc) return;
-
-                handleDownload(doc.id, doc.originalName || "document");
-              }}
-              className="inline-flex  items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-            >
-              <Download className="w-4 h-4" /> Tải xuống tệp gốc
-            </button>
-            </div>
-           
-          </div>
-        </div>
-      </div>
     </div>
+
   );
 };
 
