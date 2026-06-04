@@ -18,14 +18,42 @@ export const chatWithAI = async (
   return response.data.reply;
 };
 
+export interface ChatSession {
+  id: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getChatSessions = async (): Promise<ChatSession[]> => {
+  const response = await api.get("/chat/sessions");
+  return response.data;
+};
+
+export const getChatSessionMessages = async (sessionId: number): Promise<ChatMessage[]> => {
+  const response = await api.get(`/chat/sessions/${sessionId}/messages`);
+  return response.data;
+};
+
+export const createChatSession = async (title?: string): Promise<ChatSession> => {
+  const response = await api.post("/chat/sessions", { title });
+  return response.data;
+};
+
+export const deleteChatSession = async (sessionId: number): Promise<{ message: string }> => {
+  const response = await api.delete(`/chat/sessions/${sessionId}`);
+  return response.data;
+};
+
 export const chatWithAIStream = async (
   message: string,
-  documentId: number | undefined,
-  history: ChatMessage[] | undefined,
+  sessionId: number | undefined,
   onChunk: (text: string) => void,
   onDone: () => void,
   onError: (err: any) => void,
-  documentIds?: number[]
+  onSessionCreated?: (sessionId: number) => void,
+  documentIds?: number[],
+  documentId?: number
 ): Promise<void> => {
   try {
     const token = getAccessToken();
@@ -39,7 +67,7 @@ export const chatWithAIStream = async (
     let response = await fetch(`${import.meta.env.VITE_API_URL}/chat/stream`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ message, documentId, history, documentIds }),
+      body: JSON.stringify({ message, sessionId, documentIds, documentId }),
     });
 
     if (response.status === 401) {
@@ -51,7 +79,7 @@ export const chatWithAIStream = async (
           response = await fetch(`${import.meta.env.VITE_API_URL}/chat/stream`, {
             method: "POST",
             headers,
-            body: JSON.stringify({ message, documentId, history, documentIds }),
+            body: JSON.stringify({ message, sessionId, documentIds, documentId }),
           });
         }
       } catch (refreshErr) {
@@ -105,6 +133,9 @@ export const chatWithAIStream = async (
             if (dataObj.error) {
               onError(new Error(dataObj.error));
               return;
+            }
+            if (dataObj.sessionId && onSessionCreated) {
+              onSessionCreated(dataObj.sessionId);
             }
             if (dataObj.text) {
               onChunk(dataObj.text);

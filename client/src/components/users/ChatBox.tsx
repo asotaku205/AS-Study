@@ -42,8 +42,7 @@ const ChatBox = ({ setIsChatOpen, documentId }: ChatBoxProps) => {
       // Gọi stream API
       await chatWithAIStream(
         chatInputText,
-        documentId,
-        messages, // truyền lịch sử hội thoại trước đó làm ngữ cảnh
+        undefined, // sessionId (auto-create on backend if needed)
         (chunk) => {
           setIsThinking(false);
           if (!hasStartedResponse) {
@@ -65,14 +64,17 @@ const ChatBox = ({ setIsChatOpen, documentId }: ChatBoxProps) => {
           // Stream hoàn thành
           setIsThinking(false);
         },
-        (err) => {
+        (err: any) => {
           setIsThinking(false);
           console.error("Lỗi AI stream:", err);
           setMessages((prev) => [
             ...prev,
             { role: 'ai', content: ` Đã xảy ra lỗi: ${err.message || "Không thể kết nối với AI."}` }
           ]);
-        }
+        },
+        undefined, // onSessionCreated
+        undefined, // documentIds
+        documentId // documentId
       );
     } catch (error: any) {
       setIsThinking(false);

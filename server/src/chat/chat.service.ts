@@ -9,6 +9,8 @@ import { Repository, In } from 'typeorm';
 import { Document } from '../documents/entities/document.entity';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Response } from 'express';
+import { ChatSession } from './entities/chat-session.entity';
+import { ChatMessage } from './entities/chat-message.entity';
 
 export interface ChatHistoryItem {
   role: 'user' | 'model';
@@ -153,6 +155,10 @@ Bloom Distribution:
   constructor(
     @InjectRepository(Document)
     private readonly documentsRepository: Repository<Document>,
+    @InjectRepository(ChatSession)
+    private readonly chatSessionRepository: Repository<ChatSession>,
+    @InjectRepository(ChatMessage)
+    private readonly chatMessageRepository: Repository<ChatMessage>,
     private readonly configService: ConfigService,
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
@@ -161,6 +167,46 @@ Bloom Distribution:
     } else {
       console.warn('GEMINI_API_KEY is not set. AI Chat will run in mock mode.');
     }
+  }
+
+  // ─── Session Management ──────────────────────────────────────────────────
+  async getSessions(userId: number): Promise<ChatSession[]> {
+    return await this.chatSessionRepository.find({
+      where: { userId },
+      order: { updatedAt: 'DESC' },
+    });
+  }
+
+  async getSessionMessages(userId: number, sessionId: number): Promise<ChatMessage[]> {
+    const session = await this.chatSessionRepository.findOne({
+      where: { id: sessionId, userId },
+    });
+    if (!session) {
+      throw new NotFoundException('Không tìm thấy phiên hội thoại');
+    }
+    return await this.chatMessageRepository.find({
+      where: { sessionId },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async createSession(userId: number, title?: string): Promise<ChatSession> {
+    const session = this.chatSessionRepository.create({
+      userId,
+      title: title || 'Hội thoại mới',
+    });
+    return await this.chatSessionRepository.save(session);
+  }
+
+  async deleteSession(userId: number, sessionId: number): Promise<{ message: string }> {
+    const session = await this.chatSessionRepository.findOne({
+      where: { id: sessionId, userId },
+    });
+    if (!session) {
+      throw new NotFoundException('Không tìm thấy phiên hội thoại');
+    }
+    await this.chatSessionRepository.remove(session);
+    return { message: 'Xóa hội thoại thành công' };
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -239,20 +285,77 @@ Bloom Distribution:
 
   // ─── Non-streaming (giữ lại để tương thích) ───────────────────────────────
   async generateResponse(
+    userId: number,
     message: string,
+    sessionId?: number,
     documentId?: number,
     documentIds?: number[],
     history?: { role: 'user' | 'ai'; content: string }[],
-  ): Promise<string> {
+  ): Promise<{ reply: string; sessionId: number }> {
     if (!message) throw new BadRequestException('Tin nhắn không được để trống');
 
     const contextText = await this.prepareContext(documentId, documentIds);
-    if (!this.ai) return this.getMockResponse(message, contextText);
 
-    const geminiHistory = this.buildHistory(history);
+    // Xử lý Session
+    let session: ChatSession | null = null;
+    let chatMessages: ChatMessage[] = [];
+    if (sessionId) {
+      session = await this.chatSessionRepository.findOne({
+        where: { id: sessionId, userId },
+      });
+      if (!session) {
+        throw new NotFoundException('Không tìm thấy phiên hội thoại');
+      }
+      chatMessages = await this.chatMessageRepository.find({
+        where: { sessionId },
+        order: { createdAt: 'ASC' },
+      });
+    } else {
+      const title = message.trim().slice(0, 30) || 'Hội thoại mới';
+      session = await this.createSession(userId, title);
+      sessionId = session.id;
+    }
+
+    // Tạo thực thể tin nhắn người dùng
+    const userMessageEntity = this.chatMessageRepository.create({
+      sessionId: sessionId!,
+      role: 'user',
+      content: message,
+    });
+
+    // Lưu tin nhắn user và cập nhật thời gian Session song song để tối ưu hóa hiệu năng DB
+    session.updatedAt = new Date();
+    await Promise.all([
+      this.chatMessageRepository.save(userMessageEntity),
+      this.chatSessionRepository.save(session),
+    ]);
+
+    if (!this.ai) {
+      const reply = this.getMockResponse(message, contextText);
+      const aiMessageEntity = this.chatMessageRepository.create({
+        sessionId: sessionId!,
+        role: 'ai',
+        content: reply,
+      });
+      await this.chatMessageRepository.save(aiMessageEntity);
+      return { reply, sessionId: sessionId! };
+    }
+
+    // Dựng lịch sử chat từ cơ sở dữ liệu
+    let geminiHistory: ChatHistoryItem[] = [];
+    if (chatMessages.length > 0) {
+      geminiHistory = chatMessages.map((msg) => ({
+        role: msg.role === 'ai' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+      }));
+    } else {
+      geminiHistory = this.buildHistory(history);
+    }
+
     const systemPrompt = this.buildSystemPrompt(contextText);
     const MAX_RETRIES = 2;
     let lastError: any = null;
+    let reply = '';
 
     for (const modelName of this.MODEL_PRIORITY) {
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -266,7 +369,8 @@ Bloom Distribution:
             },
           });
           const response = await chatSession.sendMessage(message);
-          return response.response.text();
+          reply = response.response.text();
+          break;
         } catch (error: any) {
           lastError = error;
           console.error(
@@ -285,23 +389,41 @@ Bloom Distribution:
           if (kind === '429') {
             break;
           }
-          if (kind === '401')
-            return ' API key Gemini không hợp lệ. Vui lòng liên hệ quản trị viên.';
+          if (kind === '401') {
+            reply = ' API key Gemini không hợp lệ. Vui lòng liên hệ quản trị viên.';
+            break;
+          }
           if (kind === '404') {
             break;
           }
-          return ' Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại sau.';
+          reply = ' Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại sau.';
+          break;
         }
       }
+      if (reply) break;
     }
 
-    console.error('[Chat] All models failed:', lastError?.message);
-    return ' Dịch vụ AI hiện đang bận. Vui lòng thử lại sau vài phút nhé!';
+    if (!reply) {
+      console.error('[Chat] All models failed:', lastError?.message);
+      reply = ' Dịch vụ AI hiện đang bận. Vui lòng thử lại sau vài phút nhé!';
+    }
+
+    // Lưu tin nhắn AI vào DB
+    const aiMessageEntity = this.chatMessageRepository.create({
+      sessionId: sessionId!,
+      role: 'ai',
+      content: reply,
+    });
+    await this.chatMessageRepository.save(aiMessageEntity);
+
+    return { reply, sessionId: sessionId! };
   }
 
   // ─── Streaming via SSE ─────────────────────────────────────────────────────
   async streamResponse(
+    userId: number,
     message: string,
+    sessionId: number | undefined,
     documentId: number | undefined,
     documentIds: number[] | undefined,
     history: { role: 'user' | 'ai'; content: string }[] | undefined,
@@ -333,15 +455,78 @@ Bloom Distribution:
       return done();
     }
 
-    if (!this.ai) {
-      send({ text: this.getMockResponse(message, contextText) });
+    // Xử lý Session
+    let session: ChatSession | null = null;
+    let chatMessages: ChatMessage[] = [];
+    try {
+      if (sessionId) {
+        session = await this.chatSessionRepository.findOne({
+          where: { id: sessionId, userId },
+        });
+        if (!session) {
+          send({ error: 'Không tìm thấy phiên hội thoại' });
+          return done();
+        }
+        chatMessages = await this.chatMessageRepository.find({
+          where: { sessionId },
+          order: { createdAt: 'ASC' },
+        });
+      } else {
+        const title = message.trim().slice(0, 30) || 'Hội thoại mới';
+        session = await this.createSession(userId, title);
+        sessionId = session.id;
+      }
+    } catch (sessionErr: any) {
+      send({ error: `Lỗi khởi tạo phiên chat: ${sessionErr.message}` });
       return done();
     }
 
-    const geminiHistory = this.buildHistory(history);
+    // Tạo thực thể tin nhắn người dùng
+    const userMessageEntity = this.chatMessageRepository.create({
+      sessionId: sessionId!,
+      role: 'user',
+      content: message,
+    });
+
+    // Lưu tin nhắn user và cập nhật thời gian Session song song để tối ưu hóa hiệu năng DB
+    session.updatedAt = new Date();
+    await Promise.all([
+      this.chatMessageRepository.save(userMessageEntity),
+      this.chatSessionRepository.save(session),
+    ]);
+
+    // Gửi sessionId về cho client ở đầu luồng
+    send({ sessionId });
+
+    if (!this.ai) {
+      const reply = this.getMockResponse(message, contextText);
+      send({ text: reply });
+
+      const aiMessageEntity = this.chatMessageRepository.create({
+        sessionId: sessionId!,
+        role: 'ai',
+        content: reply,
+      });
+      await this.chatMessageRepository.save(aiMessageEntity);
+      return done();
+    }
+
+    // Dựng lịch sử chat từ cơ sở dữ liệu
+    let geminiHistory: ChatHistoryItem[] = [];
+    if (chatMessages.length > 0) {
+      geminiHistory = chatMessages.map((msg) => ({
+        role: msg.role === 'ai' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+      }));
+    } else {
+      geminiHistory = this.buildHistory(history);
+    }
+
     const systemPrompt = this.buildSystemPrompt(contextText);
     const MAX_RETRIES = 1;
     let lastError: any = null;
+    let fullAiResponse = '';
+    let success = false;
 
     for (const modelName of this.MODEL_PRIORITY) {
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -358,9 +543,13 @@ Bloom Distribution:
           const result = await chatSession.sendMessageStream(message);
           for await (const chunk of result.stream) {
             const text = chunk.text();
-            if (text) send({ text });
+            if (text) {
+              send({ text });
+              fullAiResponse += text;
+            }
           }
-          return done();
+          success = true;
+          break;
         } catch (error: any) {
           lastError = error;
           console.error(
@@ -390,10 +579,24 @@ Bloom Distribution:
           return done();
         }
       }
+      if (success) break;
     }
 
-    console.error('[Chat Stream] All models failed:', lastError?.message);
-    send({ error: ' Dịch vụ AI đang bận. Vui lòng thử lại sau vài phút!' });
+    if (!success) {
+      console.error('[Chat Stream] All models failed:', lastError?.message);
+      const errReply = ' Dịch vụ AI đang bận. Vui lòng thử lại sau vài phút!';
+      send({ error: errReply });
+      fullAiResponse = errReply;
+    }
+
+    // Lưu tin nhắn AI vào DB
+    const aiMessageEntity = this.chatMessageRepository.create({
+      sessionId: sessionId!,
+      role: 'ai',
+      content: fullAiResponse,
+    });
+    await this.chatMessageRepository.save(aiMessageEntity);
+
     done();
   }
 

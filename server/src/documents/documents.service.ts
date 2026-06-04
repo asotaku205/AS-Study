@@ -19,7 +19,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from 'express';
 import Tesseract from 'tesseract.js';
-import * as pdf from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 import * as mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 
@@ -249,17 +249,75 @@ export class DocumentsService {
       } else if (isPdf) {
         // PDF → thử đọc text layer trước
         const dataBuffer = fs.readFileSync(filePath);
-        const pdfParser = typeof pdf === 'function' ? pdf : (pdf as any).default;
-        const parsedData = await pdfParser(dataBuffer);
+        const parser = new PDFParse({ data: dataBuffer });
+        const parsedData = await parser.getText();
         const directText = (parsedData.text || '').trim();
 
         if (directText.length > 50) {
           // PDF có text layer → đọc trực tiếp
           text = directText;
+          await parser.destroy();
         } else {
-          // PDF scan → dùng OCR
-          const result = await Tesseract.recognize(filePath, 'eng+vie');
-          text = result.data.text;
+          // PDF scan → dùng OCR cho từng trang thông qua screenshot
+          const MAX_OCR_PAGES = 20; // Giới hạn tối đa 20 trang để tránh timeout và OOM
+          const totalPages = Math.min(parsedData.total || 0, MAX_OCR_PAGES);
+          const ocrPages: string[] = [];
+          
+          // Khởi tạo worker Tesseract dùng chung để tăng tốc hiệu năng
+          let worker: Tesseract.Worker | null = null;
+          try {
+            worker = await Tesseract.createWorker('eng+vie');
+          } catch (workerInitErr) {
+            console.error('Không thể khởi tạo Tesseract worker dùng chung:', workerInitErr);
+          }
+          
+          // 1. Render ảnh của tất cả các trang song song để tiết kiệm thời gian render CPU
+          const renderPromises: Promise<any>[] = [];
+          for (let i = 1; i <= totalPages; i++) {
+            renderPromises.push(
+              parser.getScreenshot({
+                partial: [i],
+                imageBuffer: true,
+                imageDataUrl: false,
+              })
+              .then(res => ({ pageNum: i, res }))
+              .catch(err => {
+                console.error(`Lỗi render trang ${i}:`, err);
+                return { pageNum: i, res: null };
+              })
+            );
+          }
+          
+          const renderResults = await Promise.all(renderPromises);
+          
+          // 2. Chạy OCR tuần tự trên Tesseract worker đã khởi tạo
+          for (const renderResult of renderResults) {
+            if (renderResult.res && renderResult.res.pages && renderResult.res.pages.length > 0) {
+              const pageData = renderResult.res.pages[0];
+              const buffer = Buffer.from(pageData.data);
+              
+              try {
+                let pageText = '';
+                if (worker) {
+                  const result = await worker.recognize(buffer);
+                  pageText = result.data.text;
+                } else {
+                  const result = await Tesseract.recognize(buffer, 'eng+vie');
+                  pageText = result.data.text;
+                }
+                ocrPages.push(pageText);
+              } catch (pageOcrError) {
+                console.error(`Lỗi OCR trang ${renderResult.pageNum}:`, pageOcrError);
+              }
+            }
+          }
+          
+          if (worker) {
+            await worker.terminate();
+          }
+          
+          text = ocrPages.join('\n');
+          await parser.destroy();
         }
       } else if (isDocx || isDoc) {
         // DOCX/DOC → dùng mammoth
