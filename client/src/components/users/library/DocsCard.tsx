@@ -77,7 +77,7 @@ const DocsCard = ({ docs }: { docs: Document }) => {
           </span>
           <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
             <Sparkles className="w-3 h-3" />
-            <span>1 Quiz</span>
+            <span>{docs?.quizCount ?? 0} Quiz</span>
           </span>
           <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
             <FileText className="w-3 h-3" />

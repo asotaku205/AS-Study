@@ -5,7 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-  JoinColumn
+  JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entity/user.entity';
 
@@ -16,6 +16,13 @@ export class Quizz {
 
   @Column({ name: 'user_id' })
   userId: number;
+
+  @Column({
+    name: 'document_id',
+    type: 'int',
+    nullable: true,
+  })
+  documentId: number | null;
 
   @Column({ length: 255 })
   topic: string;

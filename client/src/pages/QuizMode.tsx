@@ -3,7 +3,7 @@ import Question from "../components/users/quiz/Question";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ChatBox from "../components/users/ChatBox";
-import { saveQuizResult } from "../services/quizzService";
+import { saveQuizResult, updateQuizResult } from "../services/quizzService";
 import { getCurrentUserId } from "../services/authService";
 type QuizQuestion = {
   id: number;
@@ -21,6 +21,7 @@ const QuizMode = () => {
   const [mockQuiz, setMockQuiz] = useState<QuizQuestion[]>([]);
   const [quizTitle, setQuizTitle] = useState("Trắc nghiệm ôn tập");
   const [documentId, setDocumentId] = useState<number | undefined>(undefined);
+  const [serverQuizId, setServerQuizId] = useState<number | undefined>(undefined);
 
   const navigate = useNavigate();
   const [startTime] = useState(Date.now());
@@ -37,6 +38,9 @@ const QuizMode = () => {
           }
           if (parsed.documentId) {
             setDocumentId(Number(parsed.documentId));
+          }
+          if (parsed.serverQuizId) {
+            setServerQuizId(Number(parsed.serverQuizId));
           }
           return;
         }
@@ -180,10 +184,21 @@ const QuizMode = () => {
 
     // Call API to save to database
     try {
-      // Map difficulty sang đúng định dạng chữ hoa đầu dòng hoặc chuẩn của DB
-      const formattedDiff = quizDifficulty.charAt(0).toUpperCase() + quizDifficulty.slice(1);
-      // Save the original mockQuiz (with options) so retaking old quizzes works correctly
-      await saveQuizResult(quizTitle, formattedDiff, mockQuiz.length, score, mockQuiz);
+      const formattedDiff =
+        quizDifficulty.charAt(0).toUpperCase() + quizDifficulty.slice(1);
+
+      if (serverQuizId) {
+        await updateQuizResult(serverQuizId, score, mockQuiz);
+      } else {
+        await saveQuizResult(
+          quizTitle,
+          formattedDiff,
+          mockQuiz.length,
+          score,
+          mockQuiz,
+          documentId,
+        );
+      }
     } catch (err) {
       console.error("Lỗi khi lưu quiz result lên server:", err);
     }

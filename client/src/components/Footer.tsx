@@ -24,17 +24,17 @@ const Footer = () => {
           </h3>
           <ul className="space-y-3 text-sm font-medium">
             <li>
-              <a className="hover:text-slate-900 dark:hover:text-white transition-colors">
-                Trang chủ
+              <a href ='/library' className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                Thư Viện
               </a>
             </li>
             <li>
-              <a className="hover:text-slate-900 dark:hover:text-white transition-colors">
+              <a href = '/create-quiz' className="hover:text-slate-900 dark:hover:text-white transition-colors">
                 Tạo Quiz
               </a>
             </li>
             <li>
-              <a className="hover:text-slate-900 dark:hover:text-white transition-colors">
+              <a href = '/create-lecture'className="hover:text-slate-900 dark:hover:text-white transition-colors">
                 Học tập
               </a>
             </li>

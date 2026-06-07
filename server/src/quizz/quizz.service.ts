@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Quizz } from './entities/quizz.entity';
@@ -17,6 +17,7 @@ export class QuizzService {
     questionCount: number,
     score: number | null,
     questions?: any,
+    documentId?: number,
   ) {
     const quiz = this.quizzRepository.create({
       userId,
@@ -25,15 +26,52 @@ export class QuizzService {
       questionCount,
       score,
       questions,
+      documentId: documentId ?? null,
     });
     return await this.quizzRepository.save(quiz);
+  }
+
+  async updateScore(id: number, userId: number, score: number, questions?: any) {
+    const quiz = await this.quizzRepository.findOne({ where: { id, userId } });
+    if (!quiz) {
+      throw new NotFoundException('Không tìm thấy quiz');
+    }
+    quiz.score = score;
+    if (questions !== undefined) {
+      quiz.questions = questions;
+    }
+    return await this.quizzRepository.save(quiz);
+  }
+
+  async getCountsByDocumentIds(
+    documentIds: number[],
+  ): Promise<Record<number, number>> {
+    if (!documentIds.length) {
+      return {};
+    }
+
+    const rows = await this.quizzRepository
+      .createQueryBuilder('quizz')
+      .select('quizz.documentId', 'documentId')
+      .addSelect('COUNT(*)', 'count')
+      .where('quizz.documentId IN (:...documentIds)', { documentIds })
+      .groupBy('quizz.documentId')
+      .getRawMany();
+
+    const result: Record<number, number> = {};
+    rows.forEach((row) => {
+      if (row.documentId != null) {
+        result[Number(row.documentId)] = Number(row.count);
+      }
+    });
+    return result;
   }
 
   async getMyStats(userId: number) {
     const quizzes = await this.quizzRepository.find({ where: { userId } });
     const totalQuizzes = quizzes.length;
     const scoredQuizzes = quizzes.filter((q) => q.score !== null);
-    
+
     const avgScore =
       scoredQuizzes.length > 0
         ? scoredQuizzes.reduce((sum, q) => sum + (q.score || 0), 0) /
@@ -46,16 +84,30 @@ export class QuizzService {
         : 0;
 
     const difficultyDistribution = {
-      basic: quizzes.filter((q) => q.difficulty?.toLowerCase() === 'basic' || q.difficulty?.toLowerCase() === 'easy').length,
-      advanced: quizzes.filter((q) => q.difficulty?.toLowerCase() === 'advanced' || q.difficulty?.toLowerCase() === 'medium').length,
-      expert: quizzes.filter((q) => q.difficulty?.toLowerCase() === 'expert' || q.difficulty?.toLowerCase() === 'hard').length,
+      basic: quizzes.filter(
+        (q) =>
+          q.difficulty?.toLowerCase() === 'basic' ||
+          q.difficulty?.toLowerCase() === 'easy',
+      ).length,
+      advanced: quizzes.filter(
+        (q) =>
+          q.difficulty?.toLowerCase() === 'advanced' ||
+          q.difficulty?.toLowerCase() === 'medium',
+      ).length,
+      expert: quizzes.filter(
+        (q) =>
+          q.difficulty?.toLowerCase() === 'expert' ||
+          q.difficulty?.toLowerCase() === 'hard',
+      ).length,
     };
 
     let totalQuestions = 0;
     let totalCorrectAnswers = 0;
     scoredQuizzes.forEach((q) => {
       totalQuestions += q.questionCount || 0;
-      totalCorrectAnswers += Math.round(((q.score || 0) / 100) * (q.questionCount || 0));
+      totalCorrectAnswers += Math.round(
+        ((q.score || 0) / 100) * (q.questionCount || 0),
+      );
     });
 
     return {
@@ -119,6 +171,7 @@ export class QuizzService {
       date: q.createdAt,
     }));
   }
+
   async getMyQuizzes(userId: number) {
     return await this.quizzRepository.find({
       where: { userId },

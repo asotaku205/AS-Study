@@ -328,6 +328,7 @@ const AdminDashboard = () => {
             />
             <NotificationsPanel
               docs={docs}
+              users={users}
               showNotifPanel={showNotifPanel}
               setShowNotifPanel={(v) => {
                 setShowNotifPanel(v);

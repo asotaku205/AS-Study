@@ -22,13 +22,33 @@ import Tesseract from 'tesseract.js';
 import { PDFParse } from 'pdf-parse';
 import * as mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
+import PptxParser from 'node-pptx-parser';
+import { SettingsService } from '../settings/settings.service';
+import { QuizzService } from '../quizz/quizz.service';
 
 @Injectable()
 export class DocumentsService {
   constructor(
     @InjectRepository(Document)
     private readonly documentsRepository: Repository<Document>,
+    private readonly settingsService: SettingsService,
+    private readonly quizzService: QuizzService,
   ) {}
+
+  private async attachQuizCounts<T extends { id: number }>(
+    documents: T[],
+  ): Promise<(T & { quizCount: number })[]> {
+    if (!documents.length) {
+      return [];
+    }
+    const counts = await this.quizzService.getCountsByDocumentIds(
+      documents.map((doc) => doc.id),
+    );
+    return documents.map((doc) => ({
+      ...doc,
+      quizCount: counts[doc.id] || 0,
+    }));
+  }
 
   async uploadDocument(
     file: Express.Multer.File,
@@ -55,6 +75,16 @@ export class DocumentsService {
       }
     }
 
+    const settings = await this.settingsService.getSettings();
+    const visibility = dto.visibility || DocumentVisibility.Private;
+    let status = DocumentStatus.Draft;
+
+    if (visibility === DocumentVisibility.Public) {
+      status = settings.autoPublish
+        ? DocumentStatus.Published
+        : DocumentStatus.Pending;
+    }
+
     const document = this.documentsRepository.create({
       title: dto.title,
 
@@ -74,12 +104,9 @@ export class DocumentsService {
 
       sizeBytes: file.size,
 
-      visibility: dto.visibility || DocumentVisibility.Private,
+      visibility,
 
-      status:
-        dto.visibility === DocumentVisibility.Public
-          ? DocumentStatus.Pending
-          : DocumentStatus.Draft,
+      status,
     });
 
     const savedDocument = await this.documentsRepository.save(document);
@@ -87,8 +114,12 @@ export class DocumentsService {
       excludeExtraneousValues: true,
     });
   }
-  findAll() {
-    return this.documentsRepository.find({ relations: ['owner'] , order: { createdAt: 'DESC' }});
+  async findAll() {
+    const docs = await this.documentsRepository.find({
+      relations: ['owner'],
+      order: { createdAt: 'DESC' },
+    });
+    return this.attachQuizCounts(docs);
   }
 
   async findOne(id: number): Promise<Document> {
@@ -99,6 +130,18 @@ export class DocumentsService {
       throw new NotFoundException('Tài liệu không tồn tại');
     }
     return docs;
+  }
+
+  async findOneDetailed(id: number) {
+    const doc = await this.documentsRepository.findOne({
+      where: { id },
+      relations: ['owner', 'category'],
+    });
+    if (!doc) {
+      throw new NotFoundException('Tài liệu không tồn tại');
+    }
+    const [withCount] = await this.attachQuizCounts([doc]);
+    return withCount;
   }
 
   async deleteDocument(id: number, requestUserId?: number) {
@@ -132,23 +175,24 @@ export class DocumentsService {
       excludeExtraneousValues: true,
     });
   }
-  async findByUserId(userId: number): Promise<Document[]> {
-    return await this.documentsRepository.find({
+  async findByUserId(userId: number) {
+    const docs = await this.documentsRepository.find({
       where: { ownerUserId: userId },
       order: { createdAt: 'DESC' },
     });
+    return this.attachQuizCounts(docs);
   }
-  async getPublicDocument(): Promise<Document[]> {
-    const document = await this.documentsRepository.find({
+  async getPublicDocument() {
+    const documents = await this.documentsRepository.find({
       where: {
         visibility: DocumentVisibility.Public,
         status: DocumentStatus.Published,
       },
     });
-    if (!document) {
+    if (!documents.length) {
       throw new NotFoundException('Tài liệu công khai không tồn tại');
     }
-    return document;
+    return this.attachQuizCounts(documents);
   }
 
   async changeVisibility(
@@ -169,8 +213,8 @@ export class DocumentsService {
       excludeExtraneousValues: true,
     });
   }
-  async getFeaturedDocuments(): Promise<Document[]> {
-    return await this.documentsRepository.find({
+  async getFeaturedDocuments() {
+    const docs = await this.documentsRepository.find({
       where: {
         visibility: DocumentVisibility.Public,
         status: DocumentStatus.Published,
@@ -178,6 +222,7 @@ export class DocumentsService {
       order: { viewCount: 'DESC' },
       take: 3,
     });
+    return this.attachQuizCounts(docs);
   }
   async incrementViewCount(
     id: number,
@@ -226,8 +271,21 @@ export class DocumentsService {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
       mime === 'application/vnd.ms-excel' ||
       /\.(xlsx|xls)$/i.test(name);
+    const isPptx =
+      mime ===
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+      /\.pptx$/i.test(name);
+    const isPpt =
+      mime === 'application/vnd.ms-powerpoint' || /\.ppt$/i.test(name);
 
-    const supported = isImage || isPdf || isDocx || isDoc || isTxt || isXlsx;
+    if (isPpt && !isPptx) {
+      throw new BadRequestException(
+        'Định dạng .ppt cũ chưa được hỗ trợ. Vui lòng lưu file dưới dạng .pptx (PowerPoint 2007 trở lên).',
+      );
+    }
+
+    const supported =
+      isImage || isPdf || isDocx || isDoc || isTxt || isXlsx || isPptx;
     if (!supported) {
       throw new BadRequestException(
         'Định dạng file không được hỗ trợ trích xuất văn bản',
@@ -334,6 +392,16 @@ export class DocumentsService {
           const sheet = workbook.Sheets[sheetName];
           lines.push(`=== ${sheetName} ===`);
           lines.push(XLSX.utils.sheet_to_csv(sheet));
+        });
+        text = lines.join('\n');
+      } else if (isPptx) {
+        // PPTX → trích xuất text từng slide
+        const parser = new PptxParser(filePath);
+        const slides = await parser.extractText();
+        const lines: string[] = [];
+        slides.forEach((slide, index) => {
+          lines.push(`=== Slide ${index + 1} ===`);
+          lines.push(slide.text.join('\n'));
         });
         text = lines.join('\n');
       }

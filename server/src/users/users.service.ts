@@ -16,6 +16,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { plainToInstance } from 'class-transformer';
 import { Document } from '../documents/entities/document.entity';
 import { Quizz } from '../quizz/entities/quizz.entity';
+import { SettingsService } from '../settings/settings.service';
 @Injectable()
 export class UsersService {
   constructor(
@@ -26,9 +27,19 @@ export class UsersService {
     private quizRepository: Repository<Quizz>,
     @InjectRepository(Document)
     private documentRepository: Repository<Document>,
+    private readonly settingsService: SettingsService,
   ) {}
   // Tạo người dùng mới
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    const settings = await this.settingsService.getSettings();
+    if (settings.maintenanceMode) {
+      throw new BadRequestException(
+        'Hệ thống đang bảo trì. Vui lòng thử lại sau.',
+      );
+    }
+    if (!settings.allowRegister) {
+      throw new BadRequestException('Đăng ký tài khoản mới đã bị tắt.');
+    }
     const existingUsername = await this.usersRepository.findOne({
       where: { username: createUserDto.username },
     });

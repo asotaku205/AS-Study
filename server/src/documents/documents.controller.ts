@@ -156,7 +156,7 @@ export class DocumentsController {
   @Get(':id')
   @Public()
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return await this.documentsService.findOne(id);
+    return await this.documentsService.findOneDetailed(id);
   }
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req) {

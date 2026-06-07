@@ -11,6 +11,7 @@ import { uploadDocument, runOcrForDocument, getDocumentById } from "../../servic
 import { generateAIQuiz, generateAILecture } from "../../services/chatService";
 import { getCurrentUserId } from "../../services/authService";
 import { saveLecture } from "../../services/lectureService";
+import { saveQuizResult } from "../../services/quizzService";
 import type { Document } from "../../types/documentTypes";
 
 // Kiểu dữ liệu cho context bài học
@@ -181,7 +182,7 @@ Hãy tạo bài học TIẾP THEO mở rộng và nâng cao hơn từ chủ đ�
         finalDocId = uploadedDoc.id;
         docTitle = file.name;
         
-        toast.info("Đang trích xuất chữ (OCR) từ tài liệu...");
+        toast.info("Đang trích xuất nội dung từ tài liệu...");
         const ocrResult = await runOcrForDocument(uploadedDoc.id);
         sourceText = ocrResult.ocrText || "";
 
@@ -202,13 +203,29 @@ Hãy tạo bài học TIẾP THEO mở rộng và nâng cao hơn từ chủ đ�
       if (typeMode === "quiz") {
         toast.info("AI Scholarly đang biên soạn bộ câu hỏi trắc nghiệm...");
         const quizData = await generateAIQuiz(sourceText, difficulty, questionCount);
-        
+
         const newHistoryId = Date.now();
-        // Lưu quiz vào localStorage để QuizMode load lên
+        let serverQuizId: number | undefined;
+
+        try {
+          const saved = await saveQuizResult(
+            docTitle,
+            difficulty,
+            questionCount,
+            null,
+            quizData.questions,
+            finalDocId,
+          );
+          serverQuizId = saved.id;
+        } catch (dbErr) {
+          console.error("Lỗi khi lưu quiz vào database:", dbErr);
+        }
+
         localStorage.setItem("activeQuiz", JSON.stringify({
           title: docTitle,
           questions: quizData.questions,
           documentId: finalDocId,
+          serverQuizId,
           historyId: newHistoryId,
           difficulty: difficulty
         }));

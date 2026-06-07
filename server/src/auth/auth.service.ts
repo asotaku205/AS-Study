@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { Provider, UserRole } from '../users/entity/user.entity';
 import { UsersService } from '../users/users.service';
 import { SignInDto } from './dto/sign-in.dto';
@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { createHash, randomBytes } from 'crypto';
 import { MailService } from '../mail/mail.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +16,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly settingsService: SettingsService,
   ) {}
   // Xác thực người dùng
   async validateUser(signInDto: SignInDto): Promise<any> {
@@ -24,6 +26,12 @@ export class AuthService {
     }
     if (user.isBanned) {
       throw new ForbiddenException('Tài khoản đã bị khóa');
+    }
+    const settings = await this.settingsService.getSettings();
+    if (settings.maintenanceMode && user.role !== UserRole.Admin) {
+      throw new ServiceUnavailableException(
+        'Hệ thống đang bảo trì. Chỉ quản trị viên có thể đăng nhập.',
+      );
     }
     if (!user.password) {
       throw new UnauthorizedException('Username hoặc mật khẩu không đúng');

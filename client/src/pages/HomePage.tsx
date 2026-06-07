@@ -53,7 +53,7 @@ const HomePage = () => {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
-              to="/study"
+              to="/create-lecture"
               className="w-full sm:w-auto px-10 py-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl text-slate-900 dark:text-white border-2 border-slate-200 dark:border-slate-800 rounded-2xl font-bold hover:border-slate-900 dark:hover:border-slate-500 transition-all text-lg text-center"
             >
               Khám phá phòng học

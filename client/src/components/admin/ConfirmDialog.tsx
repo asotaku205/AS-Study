@@ -1,10 +1,11 @@
 import React from 'react'
 import { AlertCircle } from "lucide-react";
 
-const ConfirmDialog = ({ open, title, description, confirmLabel = "Xác nhận", variant = "danger", onCancel }: {
+const ConfirmDialog = ({ open, title, description, confirmLabel = "Xác nhận", variant = "danger", onCancel, onConfirm }: {
   open: boolean; title: string; description: string;
   confirmLabel?: string; variant?: "danger" | "warning";
   onCancel: () => void;
+  onConfirm?: () => void;
 }) => {
   if (!open) return null;
   return (
@@ -24,7 +25,7 @@ const ConfirmDialog = ({ open, title, description, confirmLabel = "Xác nhận",
             Huỷ
           </button>
           <button
-            onClick={onCancel}
+            onClick={onConfirm ?? onCancel}
             className={`flex-1 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors text-white ${variant === "danger" ? "bg-red-600 hover:bg-red-700" : "bg-yellow-600 hover:bg-yellow-700"}`}
           >
             {confirmLabel}

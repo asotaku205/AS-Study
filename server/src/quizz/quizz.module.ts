@@ -9,5 +9,6 @@ import { Lecture } from '../lectures/entities/lecture.entity';
   imports: [TypeOrmModule.forFeature([Quizz, Lecture])],
   providers: [QuizzService],
   controllers: [QuizzController],
+  exports: [QuizzService],
 })
-export class QuizzModule { }
+export class QuizzModule {}

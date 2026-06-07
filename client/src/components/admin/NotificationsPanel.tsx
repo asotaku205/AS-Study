@@ -1,11 +1,18 @@
 import { useRef, useMemo } from "react";
-import { Bell, ExternalLink } from "lucide-react";
-import mockLogs from "./mockData/Logs";
+import {
+  Bell,
+  ExternalLink,
+  Clock,
+  AlertTriangle,
+  UserPlus,
+  UserX,
+} from "lucide-react";
 import type { Document } from "../../types/documentTypes";
-import { Clock, AlertTriangle, AlertCircle } from "lucide-react";
+import type { User } from "../../types/userTypes";
 
 interface NotificationsPanelProps {
   docs: Document[];
+  users: User[];
   showNotifPanel: boolean;
   setShowNotifPanel: (value: boolean) => void;
   readNotifIds: Set<string>;
@@ -21,11 +28,27 @@ type Notif = {
   title: string;
   desc: string;
   time: string;
+  sortTime: number;
   action: () => void;
+};
+
+const formatTimeAgo = (dateStr: string) => {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "Vừa xong";
+  if (diffMin < 60) return `${diffMin} phút trước`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} giờ trước`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay} ngày trước`;
+  return date.toLocaleDateString("vi-VN");
 };
 
 const NotificationsPanel = ({
   docs,
+  users,
   showNotifPanel,
   setShowNotifPanel,
   readNotifIds,
@@ -36,6 +59,7 @@ const NotificationsPanel = ({
 
   const notifications = useMemo(() => {
     const list: Notif[] = [];
+
     docs
       .filter((d) => d.status === "Pending")
       .forEach((d) => {
@@ -45,10 +69,12 @@ const NotificationsPanel = ({
           icon: Clock,
           title: "Tài liệu chờ duyệt",
           desc: d.title,
-          time: "Vừa xong",
+          time: formatTimeAgo(d.createdAt),
+          sortTime: new Date(d.createdAt).getTime(),
           action: () => onNotificationAction("documents", "Pending"),
         });
       });
+
     docs
       .filter((d) => d.status === "Reported")
       .forEach((d) => {
@@ -58,40 +84,45 @@ const NotificationsPanel = ({
           icon: AlertTriangle,
           title: "Vi phạm bị báo cáo",
           desc: d.title,
-          time: "Mới nhất",
+          time: formatTimeAgo(d.createdAt),
+          sortTime: new Date(d.createdAt).getTime(),
           action: () => onNotificationAction("documents", "Reported"),
         });
       });
-    mockLogs
-      .filter((l) => l.level === "ERROR")
-      .slice(0, 2)
-      .forEach((l) => {
+
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    users
+      .filter((u) => new Date(u.createdAt).getTime() >= weekAgo)
+      .forEach((u) => {
         list.push({
-          id: `log-${l.id}`,
-          type: "error",
-          icon: AlertCircle,
-          title: "Lỗi hệ thống",
-          desc: l.message,
-          time: l.time,
-          action: () => onNotificationAction("reports"),
+          id: `new-user-${u.id}`,
+          type: "info",
+          icon: UserPlus,
+          title: "Người dùng mới",
+          desc: `${u.name} vừa đăng ký`,
+          time: formatTimeAgo(u.createdAt),
+          sortTime: new Date(u.createdAt).getTime(),
+          action: () => onNotificationAction("users"),
         });
       });
-    mockLogs
-      .filter((l) => l.level === "WARN")
-      .slice(0, 1)
-      .forEach((l) => {
+
+    users
+      .filter((u) => u.isBanned)
+      .forEach((u) => {
         list.push({
-          id: `warn-${l.id}`,
+          id: `banned-${u.id}`,
           type: "warn",
-          icon: AlertTriangle,
-          title: "Cảnh báo hệ thống",
-          desc: l.message,
-          time: l.time,
-          action: () => onNotificationAction("reports"),
+          icon: UserX,
+          title: "Tài khoản bị khóa",
+          desc: u.name,
+          time: formatTimeAgo(u.updatedAt),
+          sortTime: new Date(u.updatedAt).getTime(),
+          action: () => onNotificationAction("users"),
         });
       });
-    return list;
-  }, [docs, onNotificationAction]);
+
+    return list.sort((a, b) => b.sortTime - a.sortTime);
+  }, [docs, users, onNotificationAction]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !readNotifIds.has(n.id)).length,
@@ -114,7 +145,6 @@ const NotificationsPanel = ({
 
       {showNotifPanel && (
         <div className="absolute top-[calc(100%+8px)] right-0 w-[340px] sm:w-[380px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
-          {/* Header */}
           <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <div>
               <h3 className="font-black text-slate-900 dark:text-white text-sm">
@@ -127,7 +157,9 @@ const NotificationsPanel = ({
             {unreadCount > 0 && (
               <button
                 onClick={() => {
-                  const allReadIds = new Set<string>(notifications.map((n) => n.id));
+                  const allReadIds = new Set<string>(
+                    notifications.map((n) => n.id),
+                  );
                   setReadNotifIds(allReadIds);
                 }}
                 className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -137,7 +169,6 @@ const NotificationsPanel = ({
             )}
           </div>
 
-          {/* List */}
           <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
             {notifications.length === 0 ? (
               <div className="py-10 text-center">
@@ -188,7 +219,6 @@ const NotificationsPanel = ({
             )}
           </div>
 
-          {/* Footer */}
           <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60">
             <button
               onClick={() => {

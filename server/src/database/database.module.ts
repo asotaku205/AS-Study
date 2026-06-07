@@ -19,7 +19,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
             password: configService.get<string>('DB_PASSWORD'),
             database: configService.get<string>('DB_NAME'),
             entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-            synchronize: configService.get<string>('NODE_ENV') === 'development',
+            synchronize:
+              configService.get<string>('DB_SYNCHRONIZE') === 'true' ||
+              configService.get<string>('NODE_ENV') === 'development',
             logging: ['error'], // Chỉ hiển thị log khi có lỗi database, ẩn các câu SELECT/INSERT/UPDATE để tránh rối terminal
         }),
     })

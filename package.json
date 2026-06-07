@@ -1,0 +1,13 @@
+{
+  "name": "as-study",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:client && npm run copy:client && npm run build:server",
+    "build:client": "npm --prefix client run build",
+    "build:server": "npm --prefix server run build",
+    "copy:client": "node scripts/copy-client.mjs",
+    "start:prod": "npm --prefix server run start:prod",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run start:dev"
+  }
+}

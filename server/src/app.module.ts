@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { UserModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
@@ -18,6 +17,8 @@ import { ConfigService } from '@nestjs/config';
 import { MailModule } from './mail/mail.module';
 import { QuizzModule } from './quizz/quizz.module';
 import { LecturesModule } from './lectures/lectures.module';
+import { AdminModule } from './admin/admin.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -47,6 +48,11 @@ import { LecturesModule } from './lectures/lectures.module';
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'client'),
+      exclude: ['/api*', '/uploads*'],
+      serveStaticOptions: {
+        fallthrough: true,
+        index: 'index.html',
+      },
     }),
     UserModule,
     AuthModule,
@@ -57,10 +63,11 @@ import { LecturesModule } from './lectures/lectures.module';
     MailModule,
     QuizzModule,
     LecturesModule,
+    AdminModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [
-    AppService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
