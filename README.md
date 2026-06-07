@@ -1,4 +1,4 @@
-# AS-Study - Hỗ Trợ Học Tập Thông Minh Bằng AI & OCR
+# AS-Study - Hỗ Trợ Học Tập Thông Minh Bằng AI
 
 **AS-Study** là một ứng dụng web hỗ trợ học tập thông minh tích hợp trí tuệ nhân tạo (Generative AI) và nhận dạng ký tự quang học (OCR). Hệ thống cho phép người dùng tải lên đa dạng các loại tài liệu học tập, tự động trích xuất nội dung văn bản, tương tác trò chuyện hỏi đáp trực quan cùng tài liệu, tự động biên soạn bài học chi tiết và thiết lập các bộ câu hỏi trắc nghiệm kiểm tra năng lực cá nhân hóa theo thang Bloom's Taxonomy.
 
